@@ -138,6 +138,65 @@ class TestFastSubMillisecondAndClassroomHub(unittest.TestCase):
         self.assertGreaterEqual(len(hdc_hits), 1)
         self.assertIn("Hillock", hdc_hits[0]["title"])
 
+    def test_udp_discovery_and_stations(self):
+        from workbench.classroom_hub import ClassroomHubManager
+        with tempfile.TemporaryDirectory() as tmpdir:
+            state_file = os.path.join(tmpdir, "hub_state.json")
+            files_dir = os.path.join(tmpdir, "shared_files")
+            hub = ClassroomHubManager(state_path=state_file, shared_files_dir=files_dir, enable_udp=False)
+
+            # Test discover_ping handling
+            ping_pkt = {
+                "type": "discover_ping",
+                "payload": {"sender_ip": "192.168.1.199", "sender_host": "station-remote"},
+            }
+            hub._handle_incoming_udp(ping_pkt)
+
+            # Test get_discovered_stations
+            stations = hub.get_discovered_stations()
+            self.assertIsInstance(stations, list)
+
+            # Test update_student_telemetry and heartbeat
+            hub.update_student_telemetry(
+                student_name="Station-Test",
+                active_lab="moon_lander",
+                mode="Kid Arcade",
+                best_score="+199.0",
+                status="Active",
+            )
+            state = hub.get_state()
+            self.assertIn("Station-Test", state.get("students_roster", {}))
+            self.assertEqual(state["students_roster"]["Station-Test"]["best_score"], "+199.0")
+
+    def test_kiwix_zim_scanner_and_server_fallback(self):
+        from workbench.safe_media_sandbox import scan_local_zim_files, open_zim_with_kiwix_serve
+        # Test scan_local_zim_files returns a list without crashing
+        found = scan_local_zim_files()
+        self.assertIsInstance(found, list)
+
+        # Test open_zim_with_kiwix_serve on non-existent file
+        res_nonexistent = open_zim_with_kiwix_serve("non_existent_file_xyz.zim")
+        self.assertIn("introuvable", res_nonexistent)
+
+        # Test open_zim_with_kiwix_serve fallback on a dummy zip file
+        import zipfile
+        with tempfile.NamedTemporaryFile(suffix=".zim", delete=False) as tf:
+            tf_path = tf.name
+        try:
+            with zipfile.ZipFile(tf_path, "w") as zf:
+                zf.writestr("index.html", "<html><body>Kiwix Article</body></html>")
+            res_dummy = open_zim_with_kiwix_serve(tf_path)
+            self.assertTrue("ZIM" in res_dummy or "kiwix-serve" in res_dummy)
+        finally:
+            if os.path.exists(tf_path):
+                os.remove(tf_path)
+
+    def test_teacher_dashboard_export_and_helpers(self):
+        from workbench.teacher_dashboard import _esc, _resolve_tmp_path
+        self.assertEqual(_esc("<script>alert('xss')</script>"), "&lt;script&gt;alert('xss')&lt;/script&gt;")
+        tmp_path = _resolve_tmp_path("test_report.html")
+        self.assertTrue(tmp_path.endswith("test_report.html"))
+
 
 if __name__ == "__main__":
     unittest.main()

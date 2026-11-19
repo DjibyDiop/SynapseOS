@@ -134,12 +134,18 @@ class ClassroomHubManager:
         self.local_ip = self._detect_local_ip()
         self._listeners: List[Callable[[Dict[str, Any]], None]] = []
         self._stop_event = threading.Event()
+        self._discovery_enabled: bool = True
+        self._discovery_interval_sec: float = 30.0
+        self._discovered_stations: List[Dict[str, Any]] = []
+        self._discovery_lock = threading.Lock()
 
         os.makedirs(self.shared_files_dir, exist_ok=True)
         self._ensure_default_state()
 
         if self.enable_udp:
             self._start_udp_listener()
+        if self.enable_udp:
+            self._start_discovery_thread()
 
     @staticmethod
     def _detect_local_ip() -> str:
@@ -346,6 +352,18 @@ class ClassroomHubManager:
             station_key = payload.get("station_key", "Student-PC")
             state.setdefault("students_roster", {})[station_key] = payload
             changed = True
+        elif ptype == "discover_ping":
+            # Student répond automatiquement avec un heartbeat
+            self._broadcast_udp_packet("student_heartbeat", {
+                "station_key": f"{self.hostname} ({self.local_ip})",
+                "student_name": self.hostname,
+                "ip": self.local_ip,
+                "active_lab": "unknown",
+                "mode": "Student",
+                "best_score": "—",
+                "status": "Online",
+                "last_seen": time.strftime("%H:%M:%S"),
+            })
 
         if changed:
             self._save_state(state)
@@ -583,3 +601,61 @@ class ClassroomHubManager:
         state.setdefault("students_roster", {})[student_name] = payload
         self._save_state(state)
         self._broadcast_udp_packet("student_heartbeat", payload)
+
+    def discover_students_udp(self, timeout_sec: float = 2.0) -> List[Dict[str, Any]]:
+        """Envoie un ping UDP discovery; collecte les réponses des PCs étudiants dans timeout_sec."""
+        discovered: List[Dict[str, Any]] = []
+        responses: List[Dict[str, Any]] = []
+        done_event = threading.Event()
+
+        # Listener temporaire pour capturer les heartbeats de réponse
+        def _capture_listener(state: Dict[str, Any]) -> None:
+            roster = state.get("students_roster", {})
+            for key, val in roster.items():
+                if val.get("ip") != self.local_ip:  # exclude self
+                    if not any(r.get("ip") == val.get("ip") for r in responses):
+                        responses.append(val)
+
+        self.register_listener(_capture_listener)
+        # Envoyer discover_ping en broadcast
+        self._broadcast_udp_packet("discover_ping", {
+            "sender_ip": self.local_ip,
+            "sender_host": self.hostname,
+            "timestamp": time.strftime("%H:%M:%S"),
+        })
+        # Attendre les réponses
+        time.sleep(min(timeout_sec, 5.0))
+        if _capture_listener in self._listeners:
+            self._listeners.remove(_capture_listener)
+
+        with self._discovery_lock:
+            self._discovered_stations = list(responses)
+        return list(responses)
+
+    def _start_discovery_thread(self) -> None:
+        """Thread en arrière-plan qui envoie un discover_ping toutes les 30s."""
+        def _loop():
+            # Attendre 5s au démarrage pour laisser le listener UDP s'initialiser
+            time.sleep(5.0)
+            while not self._stop_event.is_set():
+                if self._discovery_enabled:
+                    try:
+                        self._broadcast_udp_packet("discover_ping", {
+                            "sender_ip": self.local_ip,
+                            "sender_host": self.hostname,
+                            "timestamp": time.strftime("%H:%M:%S"),
+                        })
+                    except Exception:
+                        pass
+                # Attendre 30s (en petits morceaux pour vérifier stop_event)
+                for _ in range(60):
+                    if self._stop_event.is_set():
+                        break
+                    time.sleep(0.5)
+        t = threading.Thread(target=_loop, daemon=True)
+        t.start()
+
+    def get_discovered_stations(self) -> List[Dict[str, Any]]:
+        """Retourne la liste des stations découvertes lors du dernier scan UDP."""
+        with self._discovery_lock:
+            return list(self._discovered_stations)

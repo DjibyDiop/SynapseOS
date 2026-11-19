@@ -292,7 +292,11 @@ class SynapseStudioWindow(Gtk.Window):
         self.active_lesson_id = SCHOOL_CURRICULUM[0]["id"]
         self.pack_mgr = LearningPackManager()
         self.classroom_hub = ClassroomHubManager(enable_udp=True)
+        self.hub = self.classroom_hub
         self.classroom_hub.register_listener(lambda _st: GLib.idle_add(self._refresh_classroom_hub_ui))
+        self._kiosk_mode_active: bool = False
+        self._kiosk_delete_handler_id: Optional[int] = None
+        self._kiosk_key_handler_id: Optional[int] = None
         self.earned_badges: Set[str] = set(self.pack_mgr.profile.get("earned_badges", []))
         if not self.earned_badges:
             self.earned_badges.add("m1_moon_gravity")
@@ -450,6 +454,16 @@ class SynapseStudioWindow(Gtk.Window):
         self.btn_pro_mode.set_tooltip_text("Full Engineering & Classroom Workstation: all sliders, TTFT/RAM telemetry, Python code & Linux runner!")
         self.btn_pro_mode.connect("clicked", lambda _b: self._set_kid_mode(False))
         mode_box.pack_start(self.btn_pro_mode, False, False, 1)
+
+        self.btn_kiosk = Gtk.Button(label="🔒 Mode Kiosk")
+        self.btn_kiosk.set_tooltip_text("Active le mode plein-écran kiosk — bloque Alt+F4 et fermeture pour les élèves")
+        self.btn_kiosk.connect("clicked", lambda _b: self._toggle_kiosk_mode())
+        mode_box.pack_start(self.btn_kiosk, False, False, 1)
+
+        self.btn_teacher_dashboard = Gtk.Button(label="🏫 Dashboard Prof")
+        self.btn_teacher_dashboard.set_tooltip_text("Tableau de bord complet: registre élèves, planning, notes, diffusion, mains levées")
+        self.btn_teacher_dashboard.connect("clicked", lambda _b: self._open_teacher_dashboard())
+        mode_box.pack_start(self.btn_teacher_dashboard, False, False, 1)
 
         # --- MAIN WORKSPACE 3-COLUMN SPLIT (245 + 420 + 360 = 1025px < 1280px) ---
         main_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
@@ -3664,6 +3678,77 @@ class SynapseStudioWindow(Gtk.Window):
                     f"✋ Hand raised! Sent to teacher: \"{qtext}\". Watch the bottom bar for your teacher's reply!"
                 )
                 self.kids_view.queue_draw()
+
+    def _open_teacher_dashboard(self) -> None:
+        from workbench.teacher_dashboard import TeacherDashboardDialog
+        TeacherDashboardDialog(hub=self.classroom_hub, parent_window=self).show()
+
+    def _enable_kiosk_mode(self) -> None:
+        """Active le mode kiosk plein-écran: bloque Alt+F4, Alt+Tab, Super, Escape."""
+        if self._kiosk_mode_active:
+            return
+        self._kiosk_mode_active = True
+        self.fullscreen()
+        self._kiosk_delete_handler_id = self.connect(
+            "delete-event", lambda w, e: True  # Bloque la fermeture
+        )
+        self._kiosk_key_handler_id = self.connect(
+            "key-press-event", self._on_kiosk_key_filter
+        )
+        self._set_cortex_message(
+            "🔒 MODE KIOSK ACTIVÉ — Plein-écran, fermeture désactivée. "
+            "Seul le professeur peut désactiver ce mode."
+        )
+
+    def _disable_kiosk_mode(self) -> None:
+        """Désactive le mode kiosk et restaure la fenêtre normale."""
+        if not self._kiosk_mode_active:
+            return
+        self._kiosk_mode_active = False
+        self.unfullscreen()
+        if self._kiosk_delete_handler_id is not None:
+            try:
+                self.disconnect(self._kiosk_delete_handler_id)
+            except Exception:
+                pass
+            self._kiosk_delete_handler_id = None
+        if self._kiosk_key_handler_id is not None:
+            try:
+                self.disconnect(self._kiosk_key_handler_id)
+            except Exception:
+                pass
+            self._kiosk_key_handler_id = None
+        self._set_cortex_message("🔓 Mode kiosk désactivé.")
+
+    def _on_kiosk_key_filter(self, widget, event) -> bool:
+        """Filtre les touches bloquées en mode kiosk."""
+        try:
+            from gi.repository import Gdk
+            blocked_keys = {
+                Gdk.KEY_F4, Gdk.KEY_Tab, Gdk.KEY_Super_L,
+                Gdk.KEY_Super_R, Gdk.KEY_Escape,
+            }
+            blocked_mods = Gdk.ModifierType.MOD1_MASK  # Alt
+            if event.keyval in blocked_keys:
+                return True  # Bloqué
+            if event.state & blocked_mods and event.keyval in (
+                Gdk.KEY_F4, Gdk.KEY_Tab, Gdk.KEY_Left, Gdk.KEY_Right
+            ):
+                return True  # Bloqué
+        except Exception:
+            pass
+        return False
+
+    def _toggle_kiosk_mode(self) -> None:
+        """Bascule le mode kiosk."""
+        if self._kiosk_mode_active:
+            self._disable_kiosk_mode()
+            if hasattr(self, 'btn_kiosk'):
+                self.btn_kiosk.set_label("🔒 Mode Kiosk")
+        else:
+            self._enable_kiosk_mode()
+            if hasattr(self, 'btn_kiosk'):
+                self.btn_kiosk.set_label("🔓 Quitter Kiosk")
 
     def _on_teacher_attach_file(self, _btn=None) -> None:
         dlg = Gtk.FileChooserDialog(

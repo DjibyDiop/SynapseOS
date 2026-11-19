@@ -261,6 +261,7 @@ OFFLINE_KIWIX_ARTICLES: List[Dict[str, str]] = [
 
 def scan_local_zim_files() -> List[Dict[str, Any]]:
     """Scan local storage for Kiwix .zim encyclopedia files without external network."""
+    import platform
     zim_dirs = [
         "/usr/share/kiwix",
         "/var/lib/kiwix",
@@ -268,6 +269,17 @@ def scan_local_zim_files() -> List[Dict[str, Any]]:
         os.path.expanduser("~/Downloads"),
         os.path.dirname(os.path.realpath(__file__)),
     ]
+    if platform.system() == "Windows":
+        extra_paths = [
+            os.path.expanduser("~/Downloads"),
+            os.path.expanduser("~/Desktop"),
+            "C:/kiwix",
+            "D:/kiwix",
+            os.path.expanduser("~/kiwix"),
+        ]
+        for ep in extra_paths:
+            if ep not in zim_dirs:
+                zim_dirs.append(ep)
     results: List[Dict[str, Any]] = []
     for d in zim_dirs:
         if os.path.isdir(d):
@@ -286,6 +298,53 @@ def scan_local_zim_files() -> List[Dict[str, Any]]:
             except Exception:
                 pass
     return results
+
+
+def open_zim_with_kiwix_serve(zim_path: str, port: int = 8888) -> str:
+    """Lance kiwix-serve si disponible, sinon affiche un message d'aide.
+    Retourne un message de statut pour l'UI."""
+    import shutil
+    import subprocess
+
+    if not os.path.isfile(zim_path):
+        return f"Fichier .zim introuvable: {zim_path}"
+
+    # Vérifier si kiwix-serve est dans PATH
+    kiwix_bin = shutil.which("kiwix-serve")
+    if kiwix_bin:
+        try:
+            subprocess.Popen(
+                [kiwix_bin, "--port", str(port), zim_path],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            return (
+                f"✓ kiwix-serve démarré sur http://localhost:{port}\n"
+                f"Ouvre ton navigateur sur localhost:{port}"
+            )
+        except Exception as e:
+            return f"Erreur kiwix-serve: {e}"
+    else:
+        # Fallback: lire les métadonnées du .zim (c'est un format ZIP-compatible)
+        try:
+            import zipfile
+            with zipfile.ZipFile(zim_path, 'r') as z:
+                names = z.namelist()[:20]
+                size_mb = round(os.path.getsize(zim_path) / 1024 / 1024, 1)
+                return (
+                    f"📚 Fichier ZIM détecté: {os.path.basename(zim_path)} ({size_mb} MB)\n"
+                    f"Contenu ({len(names)} entrées): {', '.join(names[:5])}...\n\n"
+                    f"💡 Installe kiwix-serve pour lire hors-ligne:\n"
+                    f"  Debian/Ubuntu: sudo apt install kiwix-tools\n"
+                    f"  Windows: https://kiwix.org/fr/download/"
+                )
+        except Exception:
+            size_mb = round(os.path.getsize(zim_path) / 1024 / 1024, 1)
+            return (
+                f"📚 Fichier ZIM: {os.path.basename(zim_path)} ({size_mb} MB)\n"
+                f"💡 Installe kiwix-serve pour lire hors-ligne:\n"
+                f"  sudo apt install kiwix-tools"
+            )
 
 
 class SafeMediaSandboxWidget:
@@ -463,6 +522,11 @@ class SafeMediaSandboxWidget:
         read_art_btn = Gtk.Button(label="🔊 Read Article Aloud")
         read_art_btn.connect("clicked", self._on_read_article_aloud)
         search_row.pack_start(read_art_btn, False, False, 0)
+
+        open_zim_btn = Gtk.Button(label="📁 Ouvrir .ZIM")
+        open_zim_btn.set_tooltip_text("Scanner ou ouvrir un fichier encyclopédie .zim hors-ligne")
+        open_zim_btn.connect("clicked", self._on_open_zim_file)
+        search_row.pack_start(open_zim_btn, False, False, 0)
 
         kiwix_box.pack_start(search_row, False, False, 0)
 
@@ -797,6 +861,26 @@ class SafeMediaSandboxWidget:
         art = getattr(self, "_current_article", OFFLINE_KIWIX_ARTICLES[0])
         if self.speak_callback:
             self.speak_callback(f"{art['title']}. {art['summary']}")
+
+    def _on_open_zim_file(self, _btn=None) -> None:
+        try:
+            zim_list = scan_local_zim_files()
+            if zim_list:
+                z = zim_list[0]
+                msg = open_zim_with_kiwix_serve(z["path"])
+            else:
+                msg = (
+                    "ℹ️ Aucun fichier .zim trouvé dans les dossiers standards.\n\n"
+                    "Pour utiliser des encyclopédies hors-ligne complètes (Wikipedia, Wiktionary, etc.):\n"
+                    "1. Téléchargez un fichier .zim depuis https://download.kiwix.org/zim/\n"
+                    "2. Placez-le dans ~/Downloads, /usr/share/kiwix ou C:\\kiwix\n"
+                    "3. Cliquez à nouveau sur ce bouton pour le charger instantanément !"
+                )
+            buf = self.art_view.get_buffer()
+            buf.set_text(msg)
+        except Exception as e:
+            buf = self.art_view.get_buffer()
+            buf.set_text(f"Erreur lors de l'ouverture du fichier .zim: {e}")
 
     def _populate_shared_files(self) -> None:
         if not GTK_AVAILABLE or not hasattr(self, "shared_files_list") or not self.classroom_hub:
