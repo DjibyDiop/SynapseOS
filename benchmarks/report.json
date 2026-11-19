@@ -1,0 +1,285 @@
+{
+  "timestamp_utc": "2026-11-19T20:34:08Z",
+  "hardware": {
+    "hostname": "DESKTOP-JRPIL3H",
+    "cpu": "Intel64 Family 6 Model 78 Stepping 3, GenuineIntel",
+    "arch": "AMD64",
+    "kernel": "11",
+    "python": "3.12.10"
+  },
+  "1_memory_and_startup": {
+    "cold_startup_ms": {
+      "1_c99_prime_kernel_init_ms": 507.6,
+      "2_cortex_fts5_kb_init_ms": 591.84,
+      "3_all_7_ai_labs_init_ms": 640.5,
+      "4_pack_manager_init_ms": 2.51,
+      "total_headless_cold_start_ms": 1742.45
+    },
+    "runtime_memory_separation": {
+      "headless_suite_rss_mb": 0.0,
+      "headless_suite_peak_mb": 0.0,
+      "live_gtk3_cairo_gui_rss_mb": 57.5,
+      "prime_c99_constant_state_kb": 67.1,
+      "std_transformer_kv_cache_4k_mb": 536.87,
+      "external_bitmap_textures_kb": 0.0
+    },
+    "storage_footprint_separation": {
+      "c99_prime_shared_lib_kb": 56.94,
+      "sqlite_fts5_kb_kb": 96.0,
+      "active_curriculum_packs_kb": 7.67,
+      "tier1_offline_socratic_weights_mb": 0.0,
+      "tier2_optional_ollama_gguf": "Not loaded (0 MB resident; running on 100% offline Tier-1 engine)"
+    }
+  },
+  "2_hardware_optimizations": {
+    "c99_o3_simd_tokens_per_sec": 179,
+    "c99_o0_portable_scalar_tokens_per_sec": 62,
+    "pure_python_fallback_tokens_per_sec": 155,
+    "simd_vs_scalar_speedup": 2.89,
+    "c99_vs_python_speedup": 1.2
+  },
+  "3_lesson_completion": {
+    "total_lessons": 14,
+    "sim_goals_passed": 14,
+    "sandbox_challenges_passed": 12,
+    "seed": 42,
+    "lessons": [
+      {
+        "lesson_id": "lesson_1_1",
+        "title": "1.1 First Moon Landing: Sensors & Thrusters",
+        "lab_id": "moon_lander",
+        "metric": "best_ever",
+        "target": ">= 180.0",
+        "untrained_baseline": -1000000000.0,
+        "trained_result": 323.6,
+        "sim_time_ms": 6869.2,
+        "sim_goal_passed": true,
+        "sandbox_code_ms": 4119.7,
+        "sandbox_code_passed": false
+      },
+      {
+        "lesson_id": "lesson_1_2",
+        "title": "1.2 Growing a Bigger Brain: Neurons & Synapses",
+        "lab_id": "moon_lander",
+        "metric": "champion_nodes",
+        "target": ">= 13.0",
+        "untrained_baseline": 12,
+        "trained_result": 14,
+        "sim_time_ms": 10153.4,
+        "sim_goal_passed": true,
+        "sandbox_code_ms": 576.5,
+        "sandbox_code_passed": true
+      },
+      {
+        "lesson_id": "lesson_1_3",
+        "title": "1.3 Stormy Mars Landing & Reward Shaping",
+        "lab_id": "moon_lander",
+        "metric": "best_ever",
+        "target": ">= 200.0",
+        "untrained_baseline": -1000000000.0,
+        "trained_result": 440.7,
+        "sim_time_ms": 7783.9,
+        "sim_goal_passed": true,
+        "sandbox_code_ms": 146.6,
+        "sandbox_code_passed": true
+      },
+      {
+        "lesson_id": "lesson_2_1",
+        "title": "2.1 How Robot Cars See with Laser Beams",
+        "lab_id": "raycast_car",
+        "metric": "best_ever",
+        "target": ">= 500.0",
+        "untrained_baseline": -1000000000.0,
+        "trained_result": 692.2,
+        "sim_time_ms": 40242.3,
+        "sim_goal_passed": true,
+        "sandbox_code_ms": 3097.1,
+        "sandbox_code_passed": true
+      },
+      {
+        "lesson_id": "lesson_2_2",
+        "title": "2.2 High-Speed Racing on a Narrow Track",
+        "lab_id": "raycast_car",
+        "metric": "best_ever",
+        "target": ">= 650.0",
+        "untrained_baseline": -1000000000.0,
+        "trained_result": 710.2,
+        "sim_time_ms": 27122.6,
+        "sim_goal_passed": true,
+        "sandbox_code_ms": 227.3,
+        "sandbox_code_passed": true
+      },
+      {
+        "lesson_id": "lesson_3_1",
+        "title": "3.1 Curiosity vs. Greed: How Q-Learning Explores",
+        "lab_id": "rl_gridworld",
+        "metric": "species",
+        "target": ">= 15.0",
+        "untrained_baseline": 0,
+        "trained_result": 29,
+        "sim_time_ms": 48.0,
+        "sim_goal_passed": true,
+        "sandbox_code_ms": 682.4,
+        "sandbox_code_passed": true
+      },
+      {
+        "lesson_id": "lesson_3_2",
+        "title": "3.2 Cautious SARSA vs. Bold Q-Learning Near Cliffs",
+        "lab_id": "rl_gridworld",
+        "metric": "best_ever",
+        "target": ">= 50.0",
+        "untrained_baseline": 0.0,
+        "trained_result": 113.6,
+        "sim_time_ms": 74.5,
+        "sim_goal_passed": true,
+        "sandbox_code_ms": 764.7,
+        "sandbox_code_passed": true
+      },
+      {
+        "lesson_id": "lesson_4_1",
+        "title": "4.1 Balancing an Unstable Pendulum in the Wind",
+        "lab_id": "cartpole_rl",
+        "metric": "best_ever",
+        "target": ">= 500.0",
+        "untrained_baseline": -1000000000.0,
+        "trained_result": 697.0,
+        "sim_time_ms": 2109.5,
+        "sim_goal_passed": true,
+        "sandbox_code_ms": 1164.5,
+        "sandbox_code_passed": true
+      },
+      {
+        "lesson_id": "lesson_5_1",
+        "title": "5.1 Cracking the XOR & Concentric Rings Puzzle",
+        "lab_id": "nn_playground",
+        "metric": "best_ever",
+        "target": ">= 92.0",
+        "untrained_baseline": 55.8,
+        "trained_result": 98.3,
+        "sim_time_ms": 2847.2,
+        "sim_goal_passed": true,
+        "sandbox_code_ms": 966.7,
+        "sandbox_code_passed": true
+      },
+      {
+        "lesson_id": "lesson_5_2",
+        "title": "5.2 Conquering the Spiral Challenge",
+        "lab_id": "nn_playground",
+        "metric": "best_ever",
+        "target": ">= 82.0",
+        "untrained_baseline": 44.2,
+        "trained_result": 95.8,
+        "sim_time_ms": 2624.1,
+        "sim_goal_passed": true,
+        "sandbox_code_ms": 74.9,
+        "sandbox_code_passed": true
+      },
+      {
+        "lesson_id": "lesson_6_1",
+        "title": "6.1 Predator-Prey Swarm Co-Evolution",
+        "lab_id": "swarm_ecosystem",
+        "metric": "best_ever",
+        "target": ">= 200.0",
+        "untrained_baseline": 0.0,
+        "trained_result": 337.0,
+        "sim_time_ms": 9312.8,
+        "sim_goal_passed": true,
+        "sandbox_code_ms": 4029.1,
+        "sandbox_code_passed": false
+      },
+      {
+        "lesson_id": "lesson_6_2",
+        "title": "6.2 Linux & Cortex AI Power User Quest",
+        "lab_id": "moon_lander",
+        "metric": "generation",
+        "target": ">= 1.0",
+        "untrained_baseline": 1,
+        "trained_result": 16,
+        "sim_time_ms": 4063.7,
+        "sim_goal_passed": true,
+        "sandbox_code_ms": 1404.9,
+        "sandbox_code_passed": true
+      },
+      {
+        "lesson_id": "lesson_7_1",
+        "title": "7.1 Solving Sliding-Window Amnesia with the PRIME Vault",
+        "lab_id": "prime_attention",
+        "metric": "best_fitness",
+        "target": ">= 80.0",
+        "untrained_baseline": 92.8,
+        "trained_result": 91.5,
+        "sim_time_ms": 59.4,
+        "sim_goal_passed": true,
+        "sandbox_code_ms": 545.7,
+        "sandbox_code_passed": true
+      },
+      {
+        "lesson_id": "lesson_7_2",
+        "title": "7.2 Why QK-Norm Stops Parabolic Explosion",
+        "lab_id": "prime_attention",
+        "metric": "best_fitness",
+        "target": ">= 70.0",
+        "untrained_baseline": 92.8,
+        "trained_result": 87.4,
+        "sim_time_ms": 52.3,
+        "sim_goal_passed": true,
+        "sandbox_code_ms": 86.5,
+        "sandbox_code_passed": true
+      }
+    ]
+  },
+  "4_tutor_latency": {
+    "prompts_tested": 10,
+    "tier1_offline_socratic_p50_ms": 1.788,
+    "tier1_offline_socratic_p95_ms": 5.542,
+    "tier1_offline_socratic_p99_ms": 5.542,
+    "socratic_guiding_question_rate": "10/10 (100%)",
+    "tier2_local_ollama": {
+      "available": false
+    }
+  },
+  "5_failure_cases": [
+    {
+      "id": "FAIL-01",
+      "scenario": "Extreme Gravity (Jupiter 24.79 m/s\u00b2) + Low Fuel (40) + 0 Hidden Neurons",
+      "expected_failure": "Rockets lack thrust/fuel margin and hidden features -> 0 landings",
+      "observed_metric": "landed_last_gen=0, best_ever=-199.7",
+      "handled_cleanly": true
+    },
+    {
+      "id": "FAIL-02",
+      "scenario": "Non-Linear Spiral Dataset with 1 Hidden Neuron & Stalled LR (0.001)",
+      "expected_failure": "Single hidden neuron cannot separate spiral (<82% accuracy goal)",
+      "observed_metric": "best_fitness=50.0% (Goal >= 82.0%)",
+      "handled_cleanly": true
+    },
+    {
+      "id": "FAIL-03",
+      "scenario": "Q-Learning Myopic Horizon (gamma=0.1, alpha=0.01, 1 episode)",
+      "expected_failure": "Q-table fails to propagate distant goal reward across maze in 1 episode",
+      "observed_metric": "best_ever=-168.0 (Goal >= 50.0)",
+      "handled_cleanly": true
+    },
+    {
+      "id": "FAIL-04",
+      "scenario": "Student Submits Invalid Python Syntax (`SyntaxError`) in Sandbox",
+      "expected_failure": "Subprocess catches SyntaxError, returns kid-friendly hint, flags Teacher Report",
+      "observed_metric": "ok=False, latency=117.3ms",
+      "handled_cleanly": true
+    },
+    {
+      "id": "FAIL-05",
+      "scenario": "Student Writes Infinite Loop (`while True: pass`) in Sandbox",
+      "expected_failure": "Sandbox timeout kills runaway child process without freezing 60 FPS GTK UI",
+      "observed_metric": "ok=False, killed_after=524.9ms",
+      "handled_cleanly": true
+    },
+    {
+      "id": "FAIL-06",
+      "scenario": "Local Ollama Daemon Unreachable / Port Closed (`127.0.0.1:65534`)",
+      "expected_failure": "Zero crash; automatic fallback to Tier-1 Offline Socratic Engine in <5ms",
+      "observed_metric": "source='Lumi Offline FTS5 Hint (3.23 ms)', fallback_latency=1016.65ms",
+      "handled_cleanly": true
+    }
+  ]
+}
