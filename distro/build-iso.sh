@@ -386,7 +386,8 @@ stage_build_iso() {
 
     cat <<EOF | sudo tee "${IMAGE_DIR}/boot/grub/grub.cfg" >/dev/null
 set default="0"
-set timeout=3
+set timeout=0
+set timeout_style=hidden
 
 menuentry "SynapseOS Potato-Grade AI & School Workstation (With Pre-Baked Cortex-Phi3 LLM)" {
     linux /${LIVE_DIR}/vmlinuz ${LIVE_BOOT_ARGS} ---
@@ -476,7 +477,8 @@ stage_build_lite_iso() {
 
     cat <<EOF | sudo tee "${lite_image_dir}/boot/grub/grub.cfg" >/dev/null
 set default="0"
-set timeout=3
+set timeout=0
+set timeout_style=hidden
 
 menuentry "SynapseOS Lite Experimentation Workstation (7 AI Labs + C99 PRIME Attention + FTS5 KB)" {
     linux /${LIVE_DIR}/vmlinuz ${LIVE_BOOT_ARGS} ---

@@ -364,6 +364,20 @@ class ClassroomHubManager:
                 "status": "Online",
                 "last_seen": time.strftime("%H:%M:%S"),
             })
+        elif ptype == "exam_start":
+            state["active_exam"] = payload
+            changed = True
+        elif ptype == "exam_submit":
+            eid = payload.get("exam_id", "default")
+            sname = payload.get("student_name", "Anonymous")
+            state.setdefault("collected_exams", {}).setdefault(eid, {})[sname] = payload
+            if sname in state.get("students_roster", {}):
+                state["students_roster"][sname]["status"] = "📄 Devoir Rendu"
+            changed = True
+        elif ptype == "exam_end":
+            if "active_exam" in state:
+                state["active_exam"]["active"] = False
+            changed = True
 
         if changed:
             self._save_state(state)
@@ -659,3 +673,147 @@ class ClassroomHubManager:
         """Retourne la liste des stations découvertes lors du dernier scan UDP."""
         with self._discovery_lock:
             return list(self._discovered_stations)
+
+    # ------------------------------------------------------------------
+    # Exam / Devoir Minuté avec Collecte Automatique LAN
+    # ------------------------------------------------------------------
+    def start_exam(
+        self,
+        title: str,
+        duration_minutes: int,
+        instructions: str,
+        lab_id: str = "moon_lander",
+        starter_code: str = "",
+    ) -> Dict[str, Any]:
+        """Lance une session d'examen/devoir minuté avec compte à rebours pour tous les élèves."""
+        state = self._load_state()
+        now = time.time()
+        duration_sec = max(1, int(duration_minutes)) * 60
+        exam_id = f"exam_{int(now)}"
+        exam_data = {
+            "exam_id": exam_id,
+            "title": title.strip() or "Évaluation en classe",
+            "instructions": instructions.strip(),
+            "lab_id": lab_id,
+            "starter_code": starter_code,
+            "duration_minutes": duration_minutes,
+            "duration_sec": duration_sec,
+            "start_time": now,
+            "end_time": now + duration_sec,
+            "active": True,
+            "created_at": time.strftime("%H:%M:%S"),
+        }
+        state["active_exam"] = exam_data
+        state.setdefault("collected_exams", {})[exam_id] = {}
+        self._save_state(state)
+        self._broadcast_udp_packet("exam_start", exam_data)
+        return exam_data
+
+    def submit_exam_work(
+        self,
+        student_name: str,
+        code: str,
+        notes: str = "",
+        exam_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Envoie le travail/code de l'élève au professeur sur le réseau local."""
+        state = self._load_state()
+        active = state.get("active_exam", {})
+        eid = exam_id or active.get("exam_id", "default_exam")
+        payload = {
+            "exam_id": eid,
+            "student_name": student_name.strip() or f"Élève ({self.hostname})",
+            "ip": self.local_ip,
+            "code": code,
+            "notes": notes.strip(),
+            "submitted_at": time.strftime("%H:%M:%S"),
+            "timestamp": time.time(),
+        }
+        state.setdefault("collected_exams", {}).setdefault(eid, {})[payload["student_name"]] = payload
+        if payload["student_name"] in state.get("students_roster", {}):
+            state["students_roster"][payload["student_name"]]["status"] = "📄 Devoir Rendu"
+        self._save_state(state)
+        self._broadcast_udp_packet("exam_submit", payload)
+        return payload
+
+    def get_exam_status(self) -> Dict[str, Any]:
+        """Retourne l'état de l'examen en cours, temps restant, et liste des devoirs reçus."""
+        state = self._load_state()
+        active = state.get("active_exam")
+        if not active or not active.get("active", False):
+            return {"active": False, "remaining_sec": 0, "collected_count": 0, "submissions": {}}
+        now = time.time()
+        end_time = active.get("end_time", now)
+        remaining = max(0, int(end_time - now))
+        eid = active.get("exam_id", "")
+        submissions = state.get("collected_exams", {}).get(eid, {})
+        return {
+            "active": remaining > 0,
+            "exam_id": eid,
+            "title": active.get("title", ""),
+            "instructions": active.get("instructions", ""),
+            "remaining_sec": remaining,
+            "remaining_min": round(remaining / 60.0, 1),
+            "collected_count": len(submissions),
+            "submissions": submissions,
+        }
+
+    def end_exam(self) -> Dict[str, Any]:
+        """Arrête immédiatement l'examen en cours et clôture la session."""
+        state = self._load_state()
+        if "active_exam" in state:
+            state["active_exam"]["active"] = False
+        self._save_state(state)
+        self._broadcast_udp_packet("exam_end", {"exam_id": state.get("active_exam", {}).get("exam_id", "")})
+        return {"status": "ended"}
+
+    def export_printable_worksheet(
+        self,
+        title: str,
+        lab_id: str,
+        questions: List[str],
+        instructions: str = "",
+    ) -> str:
+        """Génère une fiche de cours/devoir imprimable (HTML épuré) pour les écoles."""
+        questions_html = "".join(
+            f"""
+            <div class="question-block">
+                <p><b>Question {i+1} :</b> {q}</p>
+                <div class="answer-box"></div>
+            </div>
+            """
+            for i, q in enumerate(questions)
+        )
+        html = f"""<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>{title} — Fiche d'Exercice SynapseOS</title>
+<style>
+  body {{ font-family: 'Segoe UI', Arial, sans-serif; margin: 30px; color: #111; line-height: 1.5; }}
+  .header {{ border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 20px; }}
+  .header h1 {{ margin: 0; color: #1e3a8a; font-size: 22px; }}
+  .meta {{ display: flex; justify-content: space-between; font-size: 14px; color: #4b5563; margin-top: 8px; }}
+  .instructions {{ background: #f3f4f6; border-left: 4px solid #2563eb; padding: 10px 14px; margin-bottom: 24px; font-size: 14px; }}
+  .question-block {{ margin-bottom: 24px; page-break-inside: avoid; }}
+  .answer-box {{ border: 1px dashed #9ca3af; border-radius: 4px; height: 110px; margin-top: 8px; background: #fafafa; }}
+  @media print {{ body {{ margin: 15mm; }} .answer-box {{ border-color: #666; }} }}
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>🏫 SynapseOS — {title}</h1>
+    <div class="meta">
+      <span><b>Matière / Lab :</b> {lab_id}</span>
+      <span><b>Nom de l'élève :</b> ________________________</span>
+      <span><b>Date :</b> {time.strftime('%d/%m/%Y')}</span>
+    </div>
+  </div>
+  {f'<div class="instructions"><b>Consignes :</b> {instructions}</div>' if instructions else ''}
+  {questions_html}
+  <footer style="margin-top: 30px; font-size: 11px; text-align: center; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 8px;">
+    SynapseOS — Système d'Apprentissage IA & Numérique 100% Hors-Ligne & Potato-Grade
+  </footer>
+</body>
+</html>"""
+        return html

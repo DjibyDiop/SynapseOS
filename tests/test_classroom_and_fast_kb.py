@@ -197,6 +197,67 @@ class TestFastSubMillisecondAndClassroomHub(unittest.TestCase):
         tmp_path = _resolve_tmp_path("test_report.html")
         self.assertTrue(tmp_path.endswith("test_report.html"))
 
+    def test_exam_session_and_printable_worksheet(self):
+        from workbench.classroom_hub import ClassroomHubManager
+        with tempfile.TemporaryDirectory() as tmpdir:
+            state_file = os.path.join(tmpdir, "hub_state.json")
+            files_dir = os.path.join(tmpdir, "shared_files")
+            hub = ClassroomHubManager(state_path=state_file, shared_files_dir=files_dir, enable_udp=False)
+
+            # 1. Start timed exam
+            exam = hub.start_exam(
+                title="Contrôle de Physique Numérique",
+                duration_minutes=30,
+                instructions="Atteindre +200 points sur la Lune.",
+                lab_id="moon_lander",
+            )
+            self.assertTrue(exam["active"])
+            self.assertEqual(exam["duration_sec"], 1800)
+
+            # 2. Check exam status
+            st = hub.get_exam_status()
+            self.assertTrue(st["active"])
+            self.assertEqual(st["title"], "Contrôle de Physique Numérique")
+            self.assertGreater(st["remaining_sec"], 0)
+
+            # 3. Student submits work
+            sub = hub.submit_exam_work(
+                student_name="Élève-Test",
+                code="def steer(): return 1.0",
+                notes="Atterrissage réussi avec 10L de carburant restant",
+            )
+            self.assertEqual(sub["student_name"], "Élève-Test")
+            self.assertIn("def steer", sub["code"])
+
+            # 4. Check submission collected
+            st_after = hub.get_exam_status()
+            self.assertEqual(st_after["collected_count"], 1)
+            self.assertIn("Élève-Test", st_after["submissions"])
+
+            # 5. End exam
+            hub.end_exam()
+            st_ended = hub.get_exam_status()
+            self.assertFalse(st_ended["active"])
+
+            # 6. Test printable worksheet generation
+            html = hub.export_printable_worksheet(
+                title="Devoir sur Table",
+                lab_id="Physique",
+                questions=["Quelle est l'accélération de la gravité sur la Lune ?"],
+                instructions="Remplissez les encadrés ci-dessous.",
+            )
+            self.assertIn("<!DOCTYPE html>", html)
+            self.assertIn("Devoir sur Table", html)
+            self.assertIn("Quelle est l'accélération", html)
+
+    def test_direct_boot_no_menu_prompt(self):
+        """Verify build-iso.sh configures instant direct boot without asking 3 options."""
+        iso_script_path = os.path.join(os.path.dirname(__file__), "..", "distro", "build-iso.sh")
+        with open(iso_script_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn('set timeout=0', content)
+        self.assertIn('set timeout_style=hidden', content)
+
 
 if __name__ == "__main__":
     unittest.main()

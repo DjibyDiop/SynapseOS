@@ -89,6 +89,7 @@ class TeacherDashboardDialog:
         self._build_tab_grades()
         self._build_tab_broadcast()
         self._build_tab_hands_up()
+        self._build_tab_exam()
 
         self.dialog.show_all()
 
@@ -681,12 +682,164 @@ class TeacherDashboardDialog:
             self._hands_status_lbl.set_text(f"⚠ Erreur: {exc}")
 
     # ======================================================================
+    # Tab 6 — ⏱️ Devoirs & Fiches d'exercices
+    # ======================================================================
+
+    def _build_tab_exam(self):
+        label = Gtk.Label(label="⏱️ Devoirs & Fiches")
+
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        vbox.set_margin_top(8)
+        vbox.set_margin_bottom(8)
+        vbox.set_margin_start(8)
+        vbox.set_margin_end(8)
+
+        # 1. Section Examen / Devoir minuté
+        exam_frame = Gtk.Frame(label=" ⏱️ Session de Devoir / Évaluation Minutée ")
+        exam_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        exam_box.set_margin_top(6)
+        exam_box.set_margin_bottom(6)
+        exam_box.set_margin_start(8)
+        exam_box.set_margin_end(8)
+
+        # Titre et Durée
+        row1 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        lbl_title = Gtk.Label(label="Titre :")
+        row1.pack_start(lbl_title, False, False, 0)
+        self._exam_title_entry = Gtk.Entry()
+        self._exam_title_entry.set_text("Défi Réseau de Neurones & Fusée Lunaire")
+        row1.pack_start(self._exam_title_entry, True, True, 0)
+
+        lbl_dur = Gtk.Label(label="Durée (min) :")
+        row1.pack_start(lbl_dur, False, False, 0)
+        self._exam_dur_spin = Gtk.SpinButton.new_with_range(5.0, 120.0, 5.0)
+        self._exam_dur_spin.set_value(30.0)
+        row1.pack_start(self._exam_dur_spin, False, False, 0)
+        exam_box.pack_start(row1, False, False, 0)
+
+        # Consignes
+        self._exam_instr_entry = Gtk.Entry()
+        self._exam_instr_entry.set_placeholder_text("Consignes pour l'évaluation (ex: Réglez la gravité et atteignez +200 pts)...")
+        self._exam_instr_entry.set_text("Réglez les curseurs d'apprentissage et faites atterrir doucement votre fusée 3 fois consécutives.")
+        exam_box.pack_start(self._exam_instr_entry, False, False, 0)
+
+        # Boutons d'action
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        btn_start_exam = Gtk.Button(label="▶ Lancer l'Évaluation")
+        btn_start_exam.set_tooltip_text("Démarre le compte à rebours sur tous les postes élèves du réseau local")
+        btn_start_exam.connect("clicked", lambda _b: self._on_start_exam())
+        btn_row.pack_start(btn_start_exam, True, True, 0)
+
+        btn_end_exam = Gtk.Button(label="⏹ Clôturer & Collecter")
+        btn_end_exam.set_tooltip_text("Arrête l'examen et collecte tous les travaux des élèves")
+        btn_end_exam.connect("clicked", lambda _b: self._on_end_exam())
+        btn_row.pack_start(btn_end_exam, True, True, 0)
+        exam_box.pack_start(btn_row, False, False, 0)
+
+        self._exam_status_lbl = Gtk.Label(label="Aucune évaluation active actuellement.")
+        self._exam_status_lbl.set_xalign(0.0)
+        exam_box.pack_start(self._exam_status_lbl, False, False, 2)
+        exam_frame.add(exam_box)
+        vbox.pack_start(exam_frame, False, False, 0)
+
+        # 2. Section Fiche d'exercice imprimable
+        print_frame = Gtk.Frame(label=" 🖨️ Générateur de Fiche d'Exercice Imprimable ")
+        print_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        print_box.set_margin_top(6)
+        print_box.set_margin_bottom(6)
+        print_box.set_margin_start(8)
+        print_box.set_margin_end(8)
+
+        p_row1 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        lbl_p_title = Gtk.Label(label="Titre fiche :")
+        p_row1.pack_start(lbl_p_title, False, False, 0)
+        self._sheet_title_entry = Gtk.Entry()
+        self._sheet_title_entry.set_text("TP Physique & Apprentissage par Renforcement")
+        p_row1.pack_start(self._sheet_title_entry, True, True, 0)
+
+        btn_gen_sheet = Gtk.Button(label="📄 Exporter Fiche Prête à Imprimer")
+        btn_gen_sheet.set_tooltip_text("Génère un document HTML propre, aéré et directement imprimable")
+        btn_gen_sheet.connect("clicked", lambda _b: self._on_export_worksheet())
+        p_row1.pack_start(btn_gen_sheet, False, False, 0)
+        print_box.pack_start(p_row1, False, False, 0)
+
+        self._sheet_status_lbl = Gtk.Label(label="")
+        self._sheet_status_lbl.set_xalign(0.0)
+        print_box.pack_start(self._sheet_status_lbl, False, False, 2)
+        print_frame.add(print_box)
+        vbox.pack_start(print_frame, False, False, 0)
+
+        self.notebook.append_page(vbox, label)
+
+    def _on_start_exam(self):
+        title = self._exam_title_entry.get_text().strip() or "Évaluation"
+        dur = int(self._exam_dur_spin.get_value())
+        instr = self._exam_instr_entry.get_text().strip()
+        data = _safe_call(self.hub.start_exam, title=title, duration_minutes=dur, instructions=instr)
+        if data:
+            self._exam_status_lbl.set_markup(
+                f"<b><span foreground='#22c55e'>✓ Évaluation en cours ({dur} min)</span></b> · "
+                f"Titre: {title} · Début: {data.get('created_at', '')}"
+            )
+        else:
+            self._exam_status_lbl.set_text("Erreur lors du lancement de l'évaluation.")
+
+    def _on_end_exam(self):
+        _safe_call(self.hub.end_exam)
+        st = _safe_call(self.hub.get_exam_status, default={})
+        count = st.get("collected_count", 0)
+        self._exam_status_lbl.set_markup(
+            f"<b><span foreground='#f59e0b'>⏹ Évaluation clôturée</span></b> · "
+            f"Devoirs collectés : <b>{count} élève(s)</b>."
+        )
+
+    def _refresh_exam_status(self):
+        st = _safe_call(self.hub.get_exam_status, default={})
+        if st and st.get("active", False):
+            rem_min = st.get("remaining_min", 0.0)
+            collected = st.get("collected_count", 0)
+            self._exam_status_lbl.set_markup(
+                f"<b><span foreground='#22c55e'>⏱ En cours ({rem_min:.1f} min restantes)</span></b> · "
+                f"Devoirs reçus : <b>{collected}</b>"
+            )
+
+    def _on_export_worksheet(self):
+        title = self._sheet_title_entry.get_text().strip() or "Fiche d'Exercice"
+        questions = [
+            "Expliquez le rôle de la gravité lunaire (-1.62 m/s²) par rapport à la poussée du réacteur.",
+            "Quel curseur de mutation génétique permet d'éviter que le véhicule ne tourne en rond ?",
+            "Décrivez en 2 phrases comment le réseau de neurones ajuste ses poids après chaque tentative.",
+            "Proposez une fonction de récompense mathématique favorisant une consommation minimale de carburant.",
+        ]
+        html_content = _safe_call(
+            self.hub.export_printable_worksheet,
+            title=title,
+            lab_id="Physique & IA",
+            questions=questions,
+            instructions="Répondez aux questions ci-dessous avec soin après avoir testé vos hypothèses dans le simulateur.",
+            default="",
+        )
+        if not html_content:
+            self._sheet_status_lbl.set_text("⚠ Impossible de générer la fiche.")
+            return
+        out_path = _resolve_tmp_path("fiche_exercice_synapse.html")
+        try:
+            with open(out_path, "w", encoding="utf-8") as f:
+                f.write(html_content)
+            self._sheet_status_lbl.set_markup(
+                f"<b><span foreground='#22c55e'>✓ Fiche prête :</span></b> {out_path} (ouvrable dans tout navigateur)"
+            )
+        except Exception as exc:
+            self._sheet_status_lbl.set_text(f"⚠ Erreur fichier: {exc}")
+
+    # ======================================================================
     # Global auto-refresh (every 5 s)
     # ======================================================================
 
     def _auto_refresh(self):
         self._refresh_roster()
         self._refresh_schedule()
+        self._refresh_exam_status()
         return True  # keep the timer alive
 
     # ======================================================================

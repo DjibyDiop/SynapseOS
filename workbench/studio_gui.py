@@ -445,25 +445,25 @@ class SynapseStudioWindow(Gtk.Window):
         mode_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=3)
         header_box.pack_end(mode_box, False, False, 1)
 
-        self.btn_kid_mode = Gtk.Button(label="★ Synapse Kids")
-        self.btn_kid_mode.set_tooltip_text("Switch to full-screen Synapse Kids mode!")
+        self.btn_kid_mode = Gtk.Button(label="★ Mode Élève")
+        self.btn_kid_mode.set_tooltip_text("Interface simplifiée pour les élèves : grands boutons, défis pas à pas")
         self.btn_kid_mode.connect("clicked", lambda _b: self._set_kid_mode(True))
-        mode_box.pack_start(self.btn_kid_mode, False, False, 1)
+        mode_box.pack_start(self.btn_kid_mode, False, False, 2)
 
-        self.btn_pro_mode = Gtk.Button(label="⚙ Teacher Mode")
-        self.btn_pro_mode.set_tooltip_text("Full Engineering & Classroom Workstation: all sliders, TTFT/RAM telemetry, Python code & Linux runner!")
+        self.btn_pro_mode = Gtk.Button(label="⚙ Mode Prof")
+        self.btn_pro_mode.set_tooltip_text("Vue ingénieur complète : curseurs avancés, code Python et commandes")
         self.btn_pro_mode.connect("clicked", lambda _b: self._set_kid_mode(False))
-        mode_box.pack_start(self.btn_pro_mode, False, False, 1)
+        mode_box.pack_start(self.btn_pro_mode, False, False, 2)
 
         self.btn_kiosk = Gtk.Button(label="🔒 Mode Kiosk")
-        self.btn_kiosk.set_tooltip_text("Active le mode plein-écran kiosk — bloque Alt+F4 et fermeture pour les élèves")
+        self.btn_kiosk.set_tooltip_text("Verrouille la session en plein écran pour la classe")
         self.btn_kiosk.connect("clicked", lambda _b: self._toggle_kiosk_mode())
-        mode_box.pack_start(self.btn_kiosk, False, False, 1)
+        mode_box.pack_start(self.btn_kiosk, False, False, 2)
 
-        self.btn_teacher_dashboard = Gtk.Button(label="🏫 Dashboard Prof")
-        self.btn_teacher_dashboard.set_tooltip_text("Tableau de bord complet: registre élèves, planning, notes, diffusion, mains levées")
+        self.btn_teacher_dashboard = Gtk.Button(label="🏫 Tableau de Bord")
+        self.btn_teacher_dashboard.set_tooltip_text("Gestion de classe : registre, planning, devoirs minutés, fiches imprimables")
         self.btn_teacher_dashboard.connect("clicked", lambda _b: self._open_teacher_dashboard())
-        mode_box.pack_start(self.btn_teacher_dashboard, False, False, 1)
+        mode_box.pack_start(self.btn_teacher_dashboard, False, False, 2)
 
         # --- MAIN WORKSPACE 3-COLUMN SPLIT (245 + 420 + 360 = 1025px < 1280px) ---
         main_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
