@@ -173,8 +173,8 @@ class SynapseKidsView(Gtk.DrawingArea):
         self.studio = studio_win
         self.on_switch_to_teacher = on_switch_to_teacher
 
-        # Default to French ("fr") for clear and accessible classroom UI, with 1-click FR/EN toggle in top right
-        self.lang: str = "fr"
+        # Default to English ("en"), with instant 1-click FR/EN toggle in top right
+        self.lang: str = "en"
         self.level_idx: int = 0
         self.hovered_id: Optional[str] = None
         self.hitboxes: Dict[str, Tuple[float, float, float, float]] = {}

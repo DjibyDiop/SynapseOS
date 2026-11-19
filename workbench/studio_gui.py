@@ -294,6 +294,9 @@ class SynapseStudioWindow(Gtk.Window):
         self.classroom_hub = ClassroomHubManager(enable_udp=True)
         self.hub = self.classroom_hub
         self.classroom_hub.register_listener(lambda _st: GLib.idle_add(self._refresh_classroom_hub_ui))
+        from workbench.classroom_hub import LumiAdaptiveMicroPathing
+        self.adaptive_tutor = LumiAdaptiveMicroPathing(student_name="Student")
+        self.active_coop_pod: Optional[Dict[str, Any]] = None
         self._kiosk_mode_active: bool = False
         self._kiosk_delete_handler_id: Optional[int] = None
         self._kiosk_key_handler_id: Optional[int] = None
@@ -445,23 +448,28 @@ class SynapseStudioWindow(Gtk.Window):
         mode_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=3)
         header_box.pack_end(mode_box, False, False, 1)
 
-        self.btn_kid_mode = Gtk.Button(label="★ Mode Élève")
-        self.btn_kid_mode.set_tooltip_text("Interface simplifiée pour les élèves : grands boutons, défis pas à pas")
+        self.btn_kid_mode = Gtk.Button(label="★ Kid Mode")
+        self.btn_kid_mode.set_tooltip_text("Switch to clean, gamified student workspace with large step-by-step challenges")
         self.btn_kid_mode.connect("clicked", lambda _b: self._set_kid_mode(True))
         mode_box.pack_start(self.btn_kid_mode, False, False, 2)
 
-        self.btn_pro_mode = Gtk.Button(label="⚙ Mode Prof")
-        self.btn_pro_mode.set_tooltip_text("Vue ingénieur complète : curseurs avancés, code Python et commandes")
+        self.btn_pro_mode = Gtk.Button(label="⚙ Teacher Mode")
+        self.btn_pro_mode.set_tooltip_text("Full engineering workstation: advanced parameter sliders, Python code, and Linux runner")
         self.btn_pro_mode.connect("clicked", lambda _b: self._set_kid_mode(False))
         mode_box.pack_start(self.btn_pro_mode, False, False, 2)
 
-        self.btn_kiosk = Gtk.Button(label="🔒 Mode Kiosk")
-        self.btn_kiosk.set_tooltip_text("Verrouille la session en plein écran pour la classe")
+        self.btn_kiosk = Gtk.Button(label="🔒 Kiosk Mode")
+        self.btn_kiosk.set_tooltip_text("Lock full-screen classroom kiosk mode (disables desktop escape & Alt+F4)")
         self.btn_kiosk.connect("clicked", lambda _b: self._toggle_kiosk_mode())
         mode_box.pack_start(self.btn_kiosk, False, False, 2)
 
-        self.btn_teacher_dashboard = Gtk.Button(label="🏫 Tableau de Bord")
-        self.btn_teacher_dashboard.set_tooltip_text("Gestion de classe : registre, planning, devoirs minutés, fiches imprimables")
+        self.btn_coop = Gtk.Button(label="🤝 Co-Op Pod")
+        self.btn_coop.set_tooltip_text("Pair with a classmate on LAN for multiplayer co-op pilot / engineer control")
+        self.btn_coop.connect("clicked", lambda _b: self._on_toggle_coop_dialog())
+        mode_box.pack_start(self.btn_coop, False, False, 2)
+
+        self.btn_teacher_dashboard = Gtk.Button(label="🏫 Teacher Dashboard")
+        self.btn_teacher_dashboard.set_tooltip_text("Classroom manager: live roster, schedule, timed exams, and printable worksheets")
         self.btn_teacher_dashboard.connect("clicked", lambda _b: self._open_teacher_dashboard())
         mode_box.pack_start(self.btn_teacher_dashboard, False, False, 2)
 
@@ -3749,6 +3757,56 @@ class SynapseStudioWindow(Gtk.Window):
             self._enable_kiosk_mode()
             if hasattr(self, 'btn_kiosk'):
                 self.btn_kiosk.set_label("🔓 Quitter Kiosk")
+
+    def _on_toggle_coop_dialog(self) -> None:
+        """Ouvre un dialogue rapide pour créer ou rejoindre un binôme Co-Op."""
+        dlg = Gtk.Dialog(title="🤝 Co-Op Pod (Collaboration LAN)", transient_for=self, flags=0)
+        dlg.set_default_size(500, 280)
+        dlg.add_button("Fermer", Gtk.ResponseType.CLOSE)
+
+        content = dlg.get_content_area()
+        content.set_margin_top(10)
+        content.set_margin_bottom(10)
+        content.set_margin_start(10)
+        content.set_margin_end(10)
+
+        lbl = Gtk.Label()
+        lbl.set_markup("<b>🤝 Mode Binôme Co-Op (Multijoueur Local LAN)</b>\nTravaillez à deux sans internet sur le même simulateur (Rôle Pilote & Rôle Ingénieur).")
+        content.pack_start(lbl, False, False, 4)
+
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        btn_host = Gtk.Button(label="🚀 Créer un Pod (Pilote)")
+        btn_join = Gtk.Button(label="🛠️ Rejoindre un Pod (Ingénieur)")
+        btn_box.pack_start(btn_host, True, True, 0)
+        btn_box.pack_start(btn_join, True, True, 0)
+        content.pack_start(btn_box, False, False, 6)
+
+        status_lbl = Gtk.Label(label="Pods actifs : " + str(len(self.classroom_hub.get_active_coop_pods())))
+        content.pack_start(status_lbl, False, False, 4)
+
+        def _do_host(_b):
+            pod = self.classroom_hub.create_coop_pod(lab_id=self.active_lab_id, student_name="Student", role="pilot")
+            self.active_coop_pod = pod
+            status_lbl.set_markup(f"<b><span foreground='#22c55e'>✓ Pod créé :</span></b> {pod['pod_id']} (En attente d'un coéquipier...)")
+            self._set_cortex_message("🤝 Pod Co-Op ouvert ! Votre camarade peut maintenant cliquer sur 'Rejoindre un Pod'.")
+
+        def _do_join(_b):
+            pods = self.classroom_hub.get_active_coop_pods()
+            if pods:
+                p = pods[0]
+                joined = self.classroom_hub.join_coop_pod(p["pod_id"], student_name="Partner", role="engineer")
+                self.active_coop_pod = joined
+                status_lbl.set_markup(f"<b><span foreground='#22c55e'>✓ Jumelé au Pod :</span></b> {joined['pod_id']}")
+                self._set_cortex_message("🤝 Jumelage Co-Op réussi ! Vous contrôlez maintenant les paramètres avec votre partenaire.")
+            else:
+                status_lbl.set_text("Aucun pod en attente sur le réseau local. Demandez à votre camarade d'en créer un !")
+
+        btn_host.connect("clicked", _do_host)
+        btn_join.connect("clicked", _do_join)
+
+        dlg.show_all()
+        dlg.run()
+        dlg.destroy()
 
     def _on_teacher_attach_file(self, _btn=None) -> None:
         dlg = Gtk.FileChooserDialog(

@@ -258,6 +258,88 @@ class TestFastSubMillisecondAndClassroomHub(unittest.TestCase):
         self.assertIn('set timeout=0', content)
         self.assertIn('set timeout_style=hidden', content)
 
+    def test_coop_mesh_pods_pairing_and_sync(self):
+        from workbench.classroom_hub import ClassroomHubManager
+        with tempfile.TemporaryDirectory() as tmpdir:
+            state_file = os.path.join(tmpdir, "hub_state.json")
+            files_dir = os.path.join(tmpdir, "shared_files")
+            hub = ClassroomHubManager(state_path=state_file, shared_files_dir=files_dir, enable_udp=False)
+
+            # 1. Pilot creates a Co-Op pod
+            pod = hub.create_coop_pod(lab_id="moon_lander", student_name="Alice (Pilot)", role="pilot")
+            self.assertEqual(pod["status"], "waiting")
+            self.assertEqual(pod["host_role"], "pilot")
+            self.assertEqual(len(hub.get_active_coop_pods()), 1)
+
+            # 2. Engineer joins the pod
+            joined = hub.join_coop_pod(pod["pod_id"], student_name="Bob (Engineer)", role="engineer")
+            self.assertIsNotNone(joined)
+            self.assertEqual(joined["status"], "paired")
+            self.assertEqual(joined["partner_name"], "Bob (Engineer)")
+
+            # 3. Telemetry sync
+            hub.sync_coop_telemetry(
+                pod["pod_id"],
+                role="engineer",
+                controls={"fuel_boost": 1.2, "gravity_damping": 0.9},
+                telemetry={"altitude": 45.2, "speed": 1.1},
+            )
+            state = hub.get_state()
+            active_pod = state["coop_pods"][pod["pod_id"]]
+            self.assertEqual(active_pod["last_sync"]["controls"]["fuel_boost"], 1.2)
+
+    def test_session_intelligence_and_airdrop_bundle(self):
+        from workbench.classroom_hub import ClassroomHubManager
+        with tempfile.TemporaryDirectory() as tmpdir:
+            state_file = os.path.join(tmpdir, "hub_state.json")
+            files_dir = os.path.join(tmpdir, "shared_files")
+            hub = ClassroomHubManager(state_path=state_file, shared_files_dir=files_dir, enable_udp=False)
+
+            # 1. Generate session intelligence report
+            report = hub.generate_session_intelligence_report()
+            self.assertIn("total_students", report)
+            self.assertIn("mastery_rate", report)
+            self.assertIn("summary_text", report)
+            self.assertGreaterEqual(len(report["recommendations"]), 1)
+
+            # 2. Air-drop export and import
+            bundle_file = os.path.join(tmpdir, "airdrop_courses.json")
+            out = hub.export_courses_airdrop_bundle(bundle_file)
+            self.assertTrue(os.path.exists(out))
+
+            # Import on a second hub
+            state_file2 = os.path.join(tmpdir, "hub_state_2.json")
+            hub2 = ClassroomHubManager(state_path=state_file2, shared_files_dir=files_dir, enable_udp=False)
+            imported_count = hub2.import_courses_airdrop_bundle(bundle_file)
+            self.assertIsInstance(imported_count, int)
+
+    def test_lumi_adaptive_micro_pathing(self):
+        from workbench.classroom_hub import LumiAdaptiveMicroPathing
+        tutor = LumiAdaptiveMicroPathing(student_name="Student-Test")
+
+        # 1. Normal single crash -> no intrusion
+        res1 = tutor.record_attempt(score=-50.0, landed=False, lab_id="moon_lander")
+        self.assertIsNone(res1)
+
+        # 2. 3 consecutive crashes -> Socratic guidance triggered
+        tutor.record_attempt(score=-80.0, landed=False, lab_id="moon_lander")
+        res3 = tutor.record_attempt(
+            score=-120.0,
+            landed=False,
+            lab_id="moon_lander",
+            params={"gravity": -9.81, "fuel": 30.0},
+        )
+        self.assertIsNotNone(res3)
+        self.assertEqual(res3["type"], "socratic_assistance")
+        self.assertIn("Lumi", res3["title"])
+
+        # 3. 3 consecutive successes -> Master challenge unlocked
+        tutor.record_attempt(score=250.0, landed=True, lab_id="moon_lander")
+        tutor.record_attempt(score=280.0, landed=True, lab_id="moon_lander")
+        master_res = tutor.record_attempt(score=310.0, landed=True, lab_id="moon_lander")
+        self.assertIsNotNone(master_res)
+        self.assertEqual(master_res["type"], "master_challenge_unlocked")
+
 
 if __name__ == "__main__":
     unittest.main()

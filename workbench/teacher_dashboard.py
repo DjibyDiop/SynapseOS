@@ -119,6 +119,12 @@ class TeacherDashboardDialog:
         btn_refresh = Gtk.Button(label="↻ Actualiser")
         btn_refresh.connect("clicked", lambda _b: self._refresh_roster())
         toolbar.pack_start(btn_refresh, False, False, 0)
+
+        btn_report = Gtk.Button(label="📊 Bilan de Séance")
+        btn_report.set_tooltip_text("Génère une synthèse pédagogique intelligente de la séance (taux de maîtrise, points de blocage)")
+        btn_report.connect("clicked", lambda _b: self._on_show_session_report())
+        toolbar.pack_start(btn_report, False, False, 0)
+
         self._roster_status_lbl = Gtk.Label(label="")
         toolbar.pack_start(self._roster_status_lbl, False, False, 6)
         vbox.pack_start(toolbar, False, False, 0)
@@ -172,6 +178,36 @@ class TeacherDashboardDialog:
         except Exception:
             self._roster_status_lbl.set_text("⚠ Impossible de charger le registre")
         return False  # for GLib.timeout_add — do NOT reschedule automatically
+
+    def _on_show_session_report(self):
+        """Affiche le Bilan de Séance Automatisé (Invisible Assessment & Class Intelligence)."""
+        report = _safe_call(self.hub.generate_session_intelligence_report, default={})
+        summary = report.get("summary_text", "Aucune donnée disponible.")
+
+        dlg = Gtk.Dialog(
+            title="📊 Bilan Pédagogique de Séance",
+            transient_for=self.dialog,
+            flags=0,
+        )
+        dlg.set_default_size(650, 450)
+        dlg.add_button("Fermer", Gtk.ResponseType.CLOSE)
+
+        content = dlg.get_content_area()
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        tv = Gtk.TextView()
+        tv.set_editable(False)
+        tv.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        tv.set_left_margin(12)
+        tv.set_right_margin(12)
+        tv.set_top_margin(10)
+        buf = tv.get_buffer()
+        buf.set_text(summary)
+        scroll.add(tv)
+        content.pack_start(scroll, True, True, 0)
+        dlg.show_all()
+        dlg.run()
+        dlg.destroy()
 
     # ======================================================================
     # Tab 2 — 📅 Planning
