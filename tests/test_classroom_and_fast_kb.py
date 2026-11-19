@@ -340,6 +340,58 @@ class TestFastSubMillisecondAndClassroomHub(unittest.TestCase):
         self.assertIsNotNone(master_res)
         self.assertEqual(master_res["type"], "master_challenge_unlocked")
 
+    def test_learning_games_all_5_subjects_and_adventure_odyssey(self):
+        from workbench.learning_games import LearningGamesEngine, LearningGamesDialog
+        engine = LearningGamesEngine(lang="en")
+
+        # 1. Math Quest
+        self.assertTrue(engine.select_game("math"))
+        q_math = engine.get_current_question()
+        self.assertIn("question_en", q_math)
+        res_math = engine.submit_answer(q_math["correct_idx"])
+        self.assertTrue(res_math["is_correct"])
+        self.assertGreater(res_math["points_earned"], 0)
+        self.assertEqual(engine.combo_streak, 1)
+
+        # 2. Language Voyage
+        self.assertTrue(engine.select_game("language"))
+        q_lang = engine.get_current_question()
+        self.assertIn("question_en", q_lang)
+        res_wrong = engine.submit_answer((q_lang["correct_idx"] + 1) % 4)
+        self.assertFalse(res_wrong["is_correct"])
+        self.assertEqual(engine.combo_streak, 0)
+
+        # 3. Geo Explorer
+        self.assertTrue(engine.select_game("geography"))
+        q_geo = engine.get_current_question()
+        self.assertIn("category", q_geo)
+
+        # 4. Time Traveler (History)
+        self.assertTrue(engine.select_game("history"))
+        q_hist = engine.get_current_question()
+        self.assertIn("options", q_hist)
+
+        # 5. Adventure Odyssey Dungeon Quest
+        self.assertTrue(engine.select_game("adventure"))
+        q_adv = engine.get_current_question()
+        self.assertEqual(q_adv["room_num"], 1)
+        self.assertEqual(q_adv["gems"], 0)
+
+        # Solve rooms to advance
+        for _ in range(5):
+            cur_q = engine.get_current_question()
+            engine.submit_answer(cur_q["correct_idx"])
+            engine.next_question()
+
+        metrics = engine.get_summary_metrics()
+        self.assertEqual(metrics["dungeon_gems"], 5)
+        self.assertTrue(metrics["dungeon_completed"])
+        self.assertGreater(metrics["score"], 400)
+
+        # 6. Test Dialog headless instantiation
+        dlg = LearningGamesDialog(parent_window=None, lang="en")
+        self.assertIsNotNone(dlg.engine)
+
 
 if __name__ == "__main__":
     unittest.main()

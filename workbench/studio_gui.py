@@ -376,6 +376,11 @@ class SynapseStudioWindow(Gtk.Window):
         btn_kid_safe_media.connect("clicked", self._on_open_safe_media)
         kid_hub_bar.pack_start(btn_kid_safe_media, False, False, 1)
 
+        btn_kid_games = Gtk.Button(label="🎮 Learning Games")
+        btn_kid_games.set_tooltip_text("Play fun Math Quest, Word Voyage, Geo Explorer, and Time Traveler games!")
+        btn_kid_games.connect("clicked", lambda _b: self._open_learning_games())
+        kid_hub_bar.pack_start(btn_kid_games, False, False, 1)
+
         btn_kid_raise_hand = Gtk.Button(label="✋ Raise Hand / Ask Teacher")
         btn_kid_raise_hand.set_tooltip_text("Ping your teacher over the classroom LAN with a question and see their reply!")
         btn_kid_raise_hand.connect("clicked", self._on_student_raise_hand_dialog)
@@ -467,6 +472,11 @@ class SynapseStudioWindow(Gtk.Window):
         self.btn_coop.set_tooltip_text("Pair with a classmate on LAN for multiplayer co-op pilot / engineer control")
         self.btn_coop.connect("clicked", lambda _b: self._on_toggle_coop_dialog())
         mode_box.pack_start(self.btn_coop, False, False, 2)
+
+        self.btn_learning_games = Gtk.Button(label="🎮 Learning Games")
+        self.btn_learning_games.set_tooltip_text("Open interactive Math Quest, Word Voyage, Geo Explorer, and History Adventures")
+        self.btn_learning_games.connect("clicked", lambda _b: self._open_learning_games())
+        mode_box.pack_start(self.btn_learning_games, False, False, 2)
 
         self.btn_teacher_dashboard = Gtk.Button(label="🏫 Teacher Dashboard")
         self.btn_teacher_dashboard.set_tooltip_text("Classroom manager: live roster, schedule, timed exams, and printable worksheets")
@@ -3686,6 +3696,10 @@ class SynapseStudioWindow(Gtk.Window):
                     f"✋ Hand raised! Sent to teacher: \"{qtext}\". Watch the bottom bar for your teacher's reply!"
                 )
                 self.kids_view.queue_draw()
+
+    def _open_learning_games(self) -> None:
+        from workbench.learning_games import LearningGamesDialog
+        LearningGamesDialog(parent_window=self, lang="fr" if getattr(self, "lang", "en") == "fr" else "en").show()
 
     def _open_teacher_dashboard(self) -> None:
         from workbench.teacher_dashboard import TeacherDashboardDialog
