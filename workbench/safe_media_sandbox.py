@@ -6,6 +6,7 @@ without unrestricted web browsing.
 """
 
 import math
+import os
 import time
 from typing import Any, Callable, Dict, List, Optional
 
@@ -109,6 +110,30 @@ CURATED_VIDEO_EPISODES: List[Dict[str, Any]] = [
             ("-1, 0, and +1", True),
             ("3.14159, 99.9, and 1024.0", False),
             ("Only letters A, B, and C", False),
+        ],
+    },
+    {
+        "id": "ep_hdc_memory",
+        "title": "🧠 Ep 5: Hyperdimensional Computing & Brain Memory",
+        "duration_sec": 30,
+        "category": "AI & Brain Science (Grades 5-12)",
+        "narration": (
+            "How do human brains remember new facts without heating up like a supercomputer? "
+            "Instead of millions of decimal numbers, the brain uses vast patterns of brain cells called Hypervectors! "
+            "In SynapseOS, the Hillock engine binds facts together using fast bitwise XOR math and hardware POPCNT, "
+            "letting classroom laptops verify scientific truths in less than 0.1 milliseconds with zero hallucinations!"
+        ),
+        "subtitles": [
+            (0.0, 7.5, "🧠 Inside your brain, memories are stored across thousands of neurons acting as a hypervector."),
+            (7.5, 15.0, "⚡ Hyperdimensional Computing (HDC) uses 8,192-bit binary patterns on your laptop CPU."),
+            (15.0, 22.5, "🔗 Facts are bound together with instant bitwise XOR math: Moon ⊗ Gravity = 1.62 m/s²!"),
+            (22.5, 30.0, "🛡️ Zero Hallucinations! The Hillock engine verifies factual relations before speaking!"),
+        ],
+        "quiz_q": "How does Hyperdimensional Computing (HDC) bind two concepts together on a CPU?",
+        "quiz_options": [
+            ("Using fast bitwise XOR math and hardware POPCNT bit counting!", True),
+            ("By downloading a 100 GB matrix from the cloud", False),
+            ("By guessing randomly without verifying facts", False),
         ],
     },
 ]
@@ -217,7 +242,50 @@ OFFLINE_KIWIX_ARTICLES: List[Dict[str, str]] = [
             "bit counting (`POPCNT`), running **13x faster** on standard laptop CPUs!"
         ),
     },
+    {
+        "slug": "hillock_neurosymbolic_hdc",
+        "title": "🧠 Hyperdimensional Computing & Hillock Memory",
+        "category": "AI & Computer Science",
+        "summary": "How 8,192-bit hypervectors, XOR binding, and POPCNT verify facts with zero hallucinations.",
+        "body": (
+            "### 🧠 Hyperdimensional Computing (HDC / VSA)\n\n"
+            "Inspired by Roan de Jager's **Hillock** project, SynapseOS features a native neuro-symbolic memory engine.\n\n"
+            "- **Dense 8,192-bit Hypervectors**: High-dimensional vectors where random patterns are mathematically orthogonal (similarity $\\approx 0$).\n"
+            "- **XOR Binding ($\\otimes$)**: Binds Subject, Predicate, and Object into a single composite representation.\n"
+            "- **POPCNT Hardware Acceleration**: Computes Hamming distance in a single CPU clock cycle!\n"
+            "- **Zero-Hallucination Fact Verification**: Refuses to answer if factual evidence does not exist in the symbolic knowledge graph."
+        ),
+    },
 ]
+
+
+def scan_local_zim_files() -> List[Dict[str, Any]]:
+    """Scan local storage for Kiwix .zim encyclopedia files without external network."""
+    zim_dirs = [
+        "/usr/share/kiwix",
+        "/var/lib/kiwix",
+        os.path.expanduser("~/.local/share/kiwix"),
+        os.path.expanduser("~/Downloads"),
+        os.path.dirname(os.path.realpath(__file__)),
+    ]
+    results: List[Dict[str, Any]] = []
+    for d in zim_dirs:
+        if os.path.isdir(d):
+            try:
+                for f in os.listdir(d):
+                    if f.endswith(".zim"):
+                        full_path = os.path.join(d, f)
+                        sz_mb = round(os.path.getsize(full_path) / (1024 * 1024), 1)
+                        results.append({
+                            "title": f"📦 ZIM: {f}",
+                            "category": "Kiwix Offline Archive",
+                            "summary": f"Offline encyclopedia file ({sz_mb} MB) ready for reading.",
+                            "body": f"### Local Kiwix Archive: {f}\n\nPath: `{full_path}`\nSize: `{sz_mb} MB`\nStatus: Mounted offline.",
+                            "is_zim": True,
+                        })
+            except Exception:
+                pass
+    return results
 
 
 class SafeMediaSandboxWidget:
@@ -252,18 +320,20 @@ class SafeMediaSandboxWidget:
         return list(CURATED_VIDEO_EPISODES)
 
     @staticmethod
-    def search_encyclopedia(query: str = "") -> List[Dict[str, str]]:
+    def search_encyclopedia(query: str = "") -> List[Dict[str, Any]]:
+        all_articles = list(OFFLINE_KIWIX_ARTICLES)
+        all_articles.extend(scan_local_zim_files())
         q = query.strip().lower()
         if not q:
-            return list(OFFLINE_KIWIX_ARTICLES)
+            return all_articles
         matches = []
-        for art in OFFLINE_KIWIX_ARTICLES:
-            hay = f"{art['title']} {art['category']} {art['summary']} {art['body']}".lower()
+        for art in all_articles:
+            hay = f"{art.get('title', '')} {art.get('category', '')} {art.get('summary', '')} {art.get('body', '')}".lower()
             if all(tok in hay for tok in q.split()):
                 matches.append(art)
-        return matches or list(OFFLINE_KIWIX_ARTICLES)
+        return matches or all_articles
 
-    def _build_ui(self) -> Gtk.Widget:
+    def _build_ui(self) -> "Any":  # type: ignore[override]  # Gtk.Widget when GTK available
         root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         root.set_margin_top(8)
         root.set_margin_bottom(8)

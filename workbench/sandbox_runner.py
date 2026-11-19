@@ -33,7 +33,9 @@ def run_student_code(code_str: str, timeout_sec: float = 8.0) -> Dict[str, Any]:
     """Execute student Python code safely with timeout protection."""
     env = os.environ.copy()
     existing_pp = env.get("PYTHONPATH", "")
-    env["PYTHONPATH"] = f"{PROJECT_ROOT}:{existing_pp}" if existing_pp else PROJECT_ROOT
+    # Use the correct path separator for the current platform (';' on Windows, ':' on Linux/macOS)
+    _sep = os.pathsep
+    env["PYTHONPATH"] = f"{PROJECT_ROOT}{_sep}{existing_pp}" if existing_pp else PROJECT_ROOT
 
     t0 = time.perf_counter()
     try:

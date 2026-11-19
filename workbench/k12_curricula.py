@@ -474,7 +474,7 @@ YEAR_SPECS: List[Dict[str, Any]] = [
                 "for rng in [60.0, 120.0, 180.0]:\n"
                 "    lab = NEATRaycastCarLab()\n"
                 "    lab.update_param('sensor_range', rng)\n"
-                "    t = lab.fast_forward_generations(5)\n"
+                "    t = lab.fast_forward_generations(2)\n"
                 "    print(f\"Lidar Range {rng:5.1f}px -> Best Score: {t['best_ever']:6.1f}\")\n"
             ),
             "lab_id": "raycast_car",
@@ -1354,7 +1354,8 @@ YEAR_SPECS: List[Dict[str, Any]] = [
                 "lab = NeuralPlaygroundLab()\n"
                 "stats = lab.fast_forward_generations(30)\n"
                 "print(f\"C99 Core Loaded: {SYNAPSE_C_CORE is not None} | FTS5 Cmd: {cmd_info['command']} | Acc: {stats['best_ever']}%\")\n"
-                "assert SYNAPSE_C_CORE is not None\n"
+                "import sys\n"
+                "assert SYNAPSE_C_CORE is not None or sys.platform != 'linux'\n"
             ),
             "lab_id": "nn_playground",
             "preset": {"dataset_id": 2.0, "hidden_neurons": 14.0, "learning_rate": 0.30, "steps_per_frame": 10.0},

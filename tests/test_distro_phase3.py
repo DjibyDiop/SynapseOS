@@ -10,6 +10,7 @@ Unit & Integration Tests for SynapseOS Phase 3:
 import unittest
 import os
 import subprocess
+import sys
 import xml.etree.ElementTree as ET
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -103,6 +104,8 @@ class TestDistroPhase3(unittest.TestCase):
             self.assertIn("preload_model", xinit_txt)
 
     def test_buildbit_potato_kernels(self):
+        if sys.platform == "win32":
+            self.skipTest("C99 Linux .so kernels not available on Windows — skip on dev host")
         from workbench.labs.c_sim_bridge import benchmark_buildbit_potato_kernels
         res = benchmark_buildbit_potato_kernels(dim=512, n_tokens=16)
         self.assertTrue(res.get("available"))
@@ -112,6 +115,8 @@ class TestDistroPhase3(unittest.TestCase):
 
 
     def test_build_iso_dry_run(self):
+        if sys.platform == "win32":
+            self.skipTest("build-iso.sh is a Linux shell script — skip on Windows dev host")
         script = os.path.join(DISTRO_DIR, "build-iso.sh")
         res = subprocess.run([script, "--dry-run"], capture_output=True, text=True, timeout=10)
         self.assertEqual(res.returncode, 0, f"build-iso.sh --dry-run failed: {res.stderr}")

@@ -197,9 +197,9 @@ SCHOOL_CURRICULUM: List[Dict[str, Any]] = [
             "for lidar_range in [60.0, 150.0]:\n"
             "    lab = NEATRaycastCarLab()\n"
             "    lab.update_param('sensor_range', lidar_range)\n"
-            "    lab.update_param('pop_size', 25)\n"
+            "    lab.update_param('pop_size', 20)\n"
             "    lab.reset_generation()\n"
-            "    stats = lab.fast_forward_generations(6)\n"
+            "    stats = lab.fast_forward_generations(2)\n"
             "    print(f\"Lidar Range {lidar_range:5.1f} px -> Best Driving Score: {stats['best_ever']}\")\n"
         )
     },

@@ -1176,6 +1176,87 @@ class SynapseKidsView(Gtk.DrawingArea):
                 cr.move_to(px_l + (pill_w - ext_l.width) * 0.5, py_l + 14.0)
                 cr.show_text(lbl_l)
 
+            # ✋ [Lever la main / Raise Hand] LAN Hub Ping Button
+            px_hand = pill_start_x + len(LEVEL_DATA) * (pill_w + 4.5) + 8.0
+            pw_hand, ph_hand = 104.0, 20.0
+            self.hitboxes["btn_raise_hand"] = (px_hand, sy + 7.0, pw_hand, ph_hand)
+            self._rounded_rect(cr, px_hand, sy + 7.0, pw_hand, ph_hand, 6)
+            is_hov_hand = (self.hovered_id == "btn_raise_hand")
+            cr.set_source_rgb(0.96, 0.55, 0.12 if not is_hov_hand else 0.22)
+            cr.fill_preserve()
+            cr.set_source_rgba(1.0, 0.85, 0.45, 0.95)
+            cr.set_line_width(1.4)
+            cr.stroke()
+            cr.set_font_size(9.0)
+            cr.set_source_rgb(1.0, 1.0, 1.0)
+            lbl_hand = "✋ Lever la main" if is_fr else "✋ Raise Hand"
+            ext_hand = cr.text_extents(lbl_hand)
+            cr.move_to(px_hand + (pw_hand - ext_hand.width) * 0.5, sy + 21.0)
+            cr.show_text(lbl_hand)
+
+            # 📺 [Kids TV & Kiwix Sandbox] Button
+            px_tv = px_hand + pw_hand + 6.0
+            pw_tv, ph_tv = 84.0, 20.0
+            self.hitboxes["btn_safe_media"] = (px_tv, sy + 7.0, pw_tv, ph_tv)
+            self._rounded_rect(cr, px_tv, sy + 7.0, pw_tv, ph_tv, 6)
+            is_hov_tv = (self.hovered_id == "btn_safe_media")
+            cr.set_source_rgb(0.18, 0.52, 0.86 if not is_hov_tv else 0.96)
+            cr.fill_preserve()
+            cr.set_source_rgba(0.55, 0.85, 1.0, 0.95)
+            cr.set_line_width(1.4)
+            cr.stroke()
+            cr.set_font_size(9.0)
+            cr.set_source_rgb(1.0, 1.0, 1.0)
+            lbl_tv = "📺 Kids TV" if is_fr else "📺 Kids TV"
+            ext_tv = cr.text_extents(lbl_tv)
+            cr.move_to(px_tv + (pw_tv - ext_tv.width) * 0.5, sy + 21.0)
+            cr.show_text(lbl_tv)
+
+            # Check Teacher LAN Broadcast Banner
+            if hasattr(self.studio, "classroom_hub"):
+                st = self.studio.classroom_hub.get_state()
+                bcast = st.get("active_broadcast")
+                if bcast and bcast.get("title"):
+                    bb_w = sw * 0.92
+                    bb_h = 24.0
+                    bb_x = sx + (sw - bb_w) * 0.5
+                    bb_y = sy + 32.0
+                    self.hitboxes["bcast_load"] = (bb_x, bb_y, bb_w, bb_h)
+                    self._rounded_rect(cr, bb_x, bb_y, bb_w, bb_h, 6)
+                    cr.set_source_rgb(0.12, 0.55, 0.32)
+                    cr.fill_preserve()
+                    cr.set_source_rgba(0.45, 0.95, 0.65, 0.90)
+                    cr.set_line_width(1.2)
+                    cr.stroke()
+                    cr.set_font_size(9.5)
+                    cr.set_source_rgb(1.0, 1.0, 1.0)
+                    b_title = bcast.get("title", "")[:32]
+                    bc_lbl = f"📢 Mission Prof: {b_title} (Cliquer pour charger)" if is_fr else f"📢 Teacher Mission: {b_title} (Click to load)"
+                    ext_bc = cr.text_extents(bc_lbl)
+                    cr.move_to(bb_x + (bb_w - ext_bc.width) * 0.5, bb_y + 16.0)
+                    cr.show_text(bc_lbl)
+
+                # Focus Mode Overlay
+                f_mode = self.studio.classroom_hub.get_focus_mode()
+                if f_mode.get("enabled"):
+                    cr.save()
+                    cr.set_source_rgba(0.04, 0.08, 0.16, 0.92)
+                    cr.rectangle(sx, sy, sw, sh)
+                    cr.fill()
+                    cr.set_source_rgb(0.98, 0.88, 0.25)
+                    cr.set_font_size(max(16.0, H * 0.028))
+                    msg_title = "🔔 ATTENTION AU TABLEAU / EYES ON TEACHER" if is_fr else "🔔 EYES ON TEACHER / CLASS FOCUS"
+                    ext_f = cr.text_extents(msg_title)
+                    cr.move_to(sx + (sw - ext_f.width) * 0.5, sy + sh * 0.42)
+                    cr.show_text(msg_title)
+                    cr.set_font_size(max(12.0, H * 0.019))
+                    cr.set_source_rgb(0.92, 0.95, 1.0)
+                    f_msg = f_mode.get("message", "Le professeur demande votre attention.")
+                    ext_fm = cr.text_extents(f_msg[:60])
+                    cr.move_to(sx + (sw - ext_fm.width) * 0.5, sy + sh * 0.52)
+                    cr.show_text(f_msg[:60])
+                    cr.restore()
+
             cr.set_font_size(max(9.5, H * 0.015))
             cr.set_source_rgba(0.45, 0.88, 1.0, 0.90)
             hint_t = "★ Clique dans l'écran pour interagir !" if is_fr else "★ Click inside screen to interact!"
@@ -2524,6 +2605,61 @@ class SynapseKidsView(Gtk.DrawingArea):
 
         if clicked_id == "back_to_sim":
             self.view_mode = "sim"
+            self.queue_draw()
+            return True
+
+        if clicked_id == "btn_raise_hand":
+            s_nm = "Cadet"
+            if hasattr(self.studio, "pack_mgr"):
+                s_nm = self.studio.pack_mgr.profile.get("player_name", "Cadet Nova")
+            lid = self.cur_level.get("lab_id", "moon_lander")
+            cur_code = ""
+            if hasattr(self.studio, "code_view"):
+                buf = self.studio.code_view.get_buffer()
+                cur_code = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), True)
+            lab_params = dict(getattr(self.studio.active_lab, "params", {}))
+
+            if hasattr(self.studio, "classroom_hub"):
+                self.studio.classroom_hub.raise_hand(
+                    student_name=s_nm,
+                    question="Besoin d'aide sur cette mission !" if is_fr else "Need help on this lab mission!",
+                    lab_id=lid,
+                    level=f"Level {self.level_idx + 1}",
+                    code_snippet=cur_code,
+                    lab_params=lab_params,
+                )
+            self.set_pet_mood("cheering", 4.0)
+            self.custom_speech = (
+                "✋ Ton professeur a été alerté ! Il peut voir ton labo et ton code pour t'aider."
+                if is_fr
+                else "✋ Your hand is raised! Your teacher was alerted on the classroom LAN."
+            )
+            self.queue_draw()
+            return True
+
+        if clicked_id == "btn_safe_media":
+            if hasattr(self.studio, "_on_open_safe_media"):
+                self.studio._on_open_safe_media()
+            return True
+
+        if clicked_id == "bcast_load":
+            if hasattr(self.studio, "classroom_hub"):
+                st = self.studio.classroom_hub.get_state()
+                bcast = st.get("active_broadcast", {})
+                t_lab = bcast.get("lab_id")
+                if t_lab and hasattr(self.studio, "labs") and t_lab in self.studio.labs:
+                    for idx, klv in enumerate(self.levels):
+                        if klv.get("lab_id") == t_lab:
+                            self._switch_to_level(idx)
+                            break
+                if bcast.get("code_snippet") and hasattr(self.studio, "code_view"):
+                    self.studio.code_view.get_buffer().set_text(bcast["code_snippet"])
+                self.custom_speech = (
+                    f"🚀 Mission du professeur '{bcast.get('title', '')}' chargée !"
+                    if is_fr
+                    else f"🚀 Teacher Mission '{bcast.get('title', '')}' loaded!"
+                )
+                self.set_pet_mood("cheering", 4.0)
             self.queue_draw()
             return True
 

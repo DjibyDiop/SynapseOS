@@ -89,14 +89,23 @@ class TestFastSubMillisecondAndClassroomHub(unittest.TestCase):
             )
             self.assertEqual(hub.get_state()["active_broadcast"]["id"], bcast["id"])
 
-            # 4. Student Raise Hand & Teacher Reply
+            # 4. Student Raise Hand with Code & Parameters, Teacher Reply & Teleport
             hand = hub.raise_hand(
                 student_name="Djiby (2009 MacBook Pro)",
                 question="How do I make the car slow down before sharp turns?",
                 lab_id="raycast_car",
                 level="Level 2",
+                code_snippet="def steer(): return 0.5",
+                lab_params={"sensor_range": 160.0, "max_speed": 4.5},
             )
             self.assertEqual(hand["status"], "open")
+            self.assertEqual(hand["code_snippet"], "def steer(): return 0.5")
+
+            # 5. Teacher Teleportation
+            teleported = hub.teleport_to_student(hand["id"])
+            self.assertIsNotNone(teleported)
+            self.assertEqual(teleported["lab_id"], "raycast_car")
+            self.assertEqual(teleported["lab_params"]["sensor_range"], 160.0)
 
             replied = hub.reply_to_hand(
                 hand["id"],
@@ -106,14 +115,28 @@ class TestFastSubMillisecondAndClassroomHub(unittest.TestCase):
             self.assertEqual(replied["status"], "answered")
             self.assertIn("Lower throttle", replied["teacher_reply"])
 
+            # 6. Teacher Classroom Focus Mode (Pause Student Screens)
+            f_res = hub.set_focus_mode(True, "Eyes on the whiteboard for 5 minutes!")
+            self.assertTrue(f_res["enabled"])
+            self.assertTrue(hub.get_focus_mode()["enabled"])
+            self.assertIn("whiteboard", hub.get_focus_mode()["message"])
+
+            hub.set_focus_mode(False)
+            self.assertFalse(hub.get_focus_mode()["enabled"])
+
     def test_safe_media_sandbox_episodes_and_kiwix_search(self):
         episodes = SafeMediaSandboxWidget.get_episodes()
-        self.assertGreaterEqual(len(episodes), 4)
+        self.assertGreaterEqual(len(episodes), 5)
         self.assertIn("Moon", episodes[0]["title"])
+        self.assertTrue(any("Hyperdimensional" in ep["title"] for ep in episodes))
 
         kiwix_hits = SafeMediaSandboxWidget.search_encyclopedia("ternary")
         self.assertGreaterEqual(len(kiwix_hits), 1)
         self.assertIn("Ternary", kiwix_hits[0]["title"])
+
+        hdc_hits = SafeMediaSandboxWidget.search_encyclopedia("hillock")
+        self.assertGreaterEqual(len(hdc_hits), 1)
+        self.assertIn("Hillock", hdc_hits[0]["title"])
 
 
 if __name__ == "__main__":

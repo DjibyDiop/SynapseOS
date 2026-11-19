@@ -448,6 +448,24 @@ class ClassroomHubManager:
         self._save_state(state)
         return course
 
+    def set_focus_mode(self, enabled: bool, message: str = "") -> Dict[str, Any]:
+        """Teacher triggers 'Focus Mode' (Eyes on Teacher), pausing student distractions."""
+        state = self._load_state()
+        focus = {
+            "enabled": bool(enabled),
+            "message": message.strip() or "Eyes on Teacher! Please pause your lab and look at the classroom board.",
+            "timestamp": time.strftime("%H:%M:%S"),
+        }
+        state["focus_mode"] = focus
+        self._save_state(state)
+        self._broadcast_udp_packet("focus_mode", focus)
+        return focus
+
+    def get_focus_mode(self) -> Dict[str, Any]:
+        """Get the current active focus mode state."""
+        state = self._load_state()
+        return state.get("focus_mode", {"enabled": False, "message": ""})
+
     def broadcast_to_classroom(
         self,
         title: str,
@@ -482,6 +500,8 @@ class ClassroomHubManager:
         question: str,
         lab_id: str = "moon_lander",
         level: str = "Kid Arcade",
+        code_snippet: str = "",
+        lab_params: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Student clicks '✋ Raise Hand / Ask Teacher' to alert the teacher on LAN."""
         state = self._load_state()
@@ -492,6 +512,8 @@ class ClassroomHubManager:
             "lab_id": lab_id,
             "level": level,
             "question": question.strip() or "I need help with this lab step, please!",
+            "code_snippet": code_snippet,
+            "lab_params": dict(lab_params or {}),
             "status": "open",
             "teacher_reply": "",
             "timestamp": time.strftime("%H:%M:%S"),
@@ -511,6 +533,14 @@ class ClassroomHubManager:
         self._save_state(state)
         self._broadcast_udp_packet("raise_hand", entry)
         return entry
+
+    def teleport_to_student(self, hand_id: str) -> Optional[Dict[str, Any]]:
+        """Teacher retrieves student state, code, and lab params to debug their issue."""
+        state = self._load_state()
+        for h in state.get("hands_up_queue", []):
+            if h.get("id") == hand_id:
+                return dict(h)
+        return None
 
     def reply_to_hand(self, hand_id: str, teacher_reply: str) -> Optional[Dict[str, Any]]:
         """Teacher sends an instant answer/hint back to a student's raised hand."""

@@ -103,6 +103,11 @@ def _load_c_prime_lib() -> Optional[ctypes.CDLL]:
 _C_PRIME_LIB = _load_c_prime_lib()
 
 
+def is_c_prime_available() -> bool:
+    """Returns True if the native C99 libprime.so library is successfully loaded."""
+    return _C_PRIME_LIB is not None
+
+
 def _layer_norm_vec(vec: List[float]) -> List[float]:
     n = len(vec)
     if n == 0:

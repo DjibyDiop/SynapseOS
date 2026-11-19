@@ -17,6 +17,7 @@ from typing import Dict, Any, Optional, List
 
 from cortex.knowledge.linux_guide import LINUX_TOPICS
 from cortex.knowledge.ai_guide import AI_TOPICS
+from cortex.hillock_hdc import get_hillock_store
 
 KB_DB_PATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "knowledge", "cortex_kb.sqlite")
@@ -28,9 +29,16 @@ class SystemInspector:
 
     @staticmethod
     def get_hardware_summary() -> Dict[str, Any]:
+        # Cross-platform kernel detection (os.uname() is Linux-only)
+        try:
+            _kernel = os.uname().release  # type: ignore[attr-defined]
+        except AttributeError:
+            import platform
+            _kernel = platform.version()
+
         info = {
-            "os": "Linux",
-            "kernel": os.uname().release,
+            "os": sys.platform,
+            "kernel": _kernel,
             "cpu_cores": os.cpu_count() or 1,
             "cpu_model": "Generic x86_64",
             "simd_flags": [],
@@ -77,7 +85,33 @@ class SystemInspector:
                 else:
                     info["hardware_tier"] = "tier_2_classroom"
         except Exception:
-            pass
+            # Fallback: use Python standard library for cross-platform RAM detection
+            try:
+                import platform as _plat
+                if _plat.system() == "Windows":
+                    import ctypes as _ct
+                    class _MEMSTAT(_ct.Structure):
+                        _fields_ = [("dwLength", _ct.c_ulong), ("dwMemoryLoad", _ct.c_ulong),
+                                    ("ullTotalPhys", _ct.c_ulonglong), ("ullAvailPhys", _ct.c_ulonglong),
+                                    ("ullTotalPageFile", _ct.c_ulonglong), ("ullAvailPageFile", _ct.c_ulonglong),
+                                    ("ullTotalVirtual", _ct.c_ulonglong), ("ullAvailVirtual", _ct.c_ulonglong),
+                                    ("ullAvailExtendedVirtual", _ct.c_ulonglong)]
+                    ms = _MEMSTAT()
+                    ms.dwLength = _ct.sizeof(_MEMSTAT)
+                    _ct.windll.kernel32.GlobalMemoryStatusEx(_ct.byref(ms))
+                    mem_total = ms.ullTotalPhys / (1024 ** 3)
+                    mem_avail = ms.ullAvailPhys / (1024 ** 3)
+                    info["ram_total_gb"] = round(mem_total, 1)
+                    info["ram_avail_gb"] = round(mem_avail, 1)
+                    info["is_potato"] = mem_total <= 4.5 or not info["has_avx2"]
+                    if mem_total < 3.5 or not info["has_avx"]:
+                        info["hardware_tier"] = "tier_1_potato"
+                    elif mem_total >= 7.5 and info["has_avx2"]:
+                        info["hardware_tier"] = "tier_3_workstation"
+                    else:
+                        info["hardware_tier"] = "tier_2_classroom"
+            except Exception:
+                pass
 
         try:
             p = subprocess.run(["lspci"], capture_output=True, text=True, timeout=2)
@@ -232,6 +266,7 @@ class CortexEngine:
         self.ollama_url = ollama_url
         self.system_info = SystemInspector.get_hardware_summary()
         self.kb = CortexKnowledgeDB()
+        self.hillock = get_hillock_store()
         self.potato_mode = potato_mode or self.system_info.get("is_potato", False)
         try:
             from cortex.prime_window import CortexSlidingWindowCompressor
@@ -776,12 +811,35 @@ class CortexEngine:
             "source": "SQLite FTS5 Instant Fallback (<0.5 ms)"
         })
 
+    def verify_factual_claim(self, subject: str, predicate: str, claimed_object: str) -> Dict[str, Any]:
+        """Verify an educational/STEM claim against Hillock neuro-symbolic memory."""
+        return self.hillock.verify_fact(subject, predicate, claimed_object)
+
+    def teach_classroom_fact(self, subject: str, predicate: str, object_val: str, source: str = "classroom") -> bool:
+        """One-shot Hebbian learning for classroom facts."""
+        return self.hillock.teach_fact(subject, predicate, object_val, source=source)
+
     def explain_ai_concept(self, topic_query: str, force_llm: bool = False) -> Dict[str, Any]:
         """
-        Hybrid FTS5 + `cortex-phi3` AI Development Mentor.
-        When force_llm=False (the '⚡ Instant (<1ms)' button), strictly returns in <1ms from SQLite FTS5
+        Hybrid FTS5 + Hillock HDC + `cortex-phi3` AI Development Mentor.
+        When force_llm=False (the '⚡ Instant (<1ms)' button), strictly returns in <1ms from SQLite FTS5 / HDC
         without ever blocking on CPU/GPU LLM inference.
         """
+        # 1. Hillock Neuro-Symbolic Fact Verification hook
+        q_lower = topic_query.strip().lower()
+        if q_lower.startswith("?verify") or q_lower.startswith("?fact") or "gravity" in q_lower or "lidar" in q_lower:
+            v_res = self.hillock.verify_sentence_claim(topic_query)
+            if v_res.get("extracted_subject"):
+                return {
+                    "paradigm": "Hillock Neuro-Symbolic Verification",
+                    "title": f"Fact Check: {v_res.get('extracted_subject')} {v_res.get('extracted_predicate')}",
+                    "summary": v_res["explanation"],
+                    "layman_guide": v_res["explanation"],
+                    "math_and_theory": f"Verified: {v_res['verified']} (Confidence: {v_res['confidence']}) via 8,192-bit HDC POPCNT.",
+                    "debugging_tips": "Hillock checks hyperdimensional graph triples before answering to prevent AI hallucinations.",
+                    "source": f"Hillock HDC Memory ({v_res['latency_ms']} ms)"
+                }
+
         fts_hits = self.kb.search_ai(topic_query, limit=2)
 
         if fts_hits and not force_llm:

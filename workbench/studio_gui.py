@@ -818,6 +818,11 @@ class SynapseStudioWindow(Gtk.Window):
         btn_push_lan.connect("clicked", self._on_teacher_broadcast_lan)
         bcast_btn_row.pack_start(btn_push_lan, True, True, 0)
 
+        self.btn_focus_mode = Gtk.Button(label="🔔 Focus Mode")
+        self.btn_focus_mode.set_tooltip_text("Toggle Classroom Focus Mode (Pauses student screens for teacher announcements)")
+        self.btn_focus_mode.connect("clicked", self._on_teacher_toggle_focus)
+        bcast_btn_row.pack_start(self.btn_focus_mode, True, True, 0)
+
         bcast_box.pack_start(bcast_btn_row, False, False, 0)
         bcast_frame.add(bcast_box)
         hub_vbox.pack_start(bcast_frame, False, False, 0)
@@ -862,6 +867,11 @@ class SynapseStudioWindow(Gtk.Window):
         btn_send_reply = Gtk.Button(label="💬 Reply to Hand")
         btn_send_reply.connect("clicked", self._on_teacher_reply_hand)
         qa_box.pack_start(btn_send_reply, False, False, 0)
+
+        btn_teleport = Gtk.Button(label="🎯 Teleport")
+        btn_teleport.set_tooltip_text("Load this student's exact lab, parameters, and Python code to debug their issue live!")
+        btn_teleport.connect("clicked", self._on_teacher_teleport_student)
+        qa_box.pack_start(btn_teleport, False, False, 0)
 
         qa_frame.add(qa_box)
         hub_vbox.pack_start(qa_frame, False, False, 0)
@@ -3733,6 +3743,56 @@ class SynapseStudioWindow(Gtk.Window):
         self.classroom_hub.reply_to_hand(target_id, reply_txt)
         self._refresh_classroom_hub_ui()
         self._append_cortex_output("💬 Answered Student Hand", f"Sent reply to student: {reply_txt}")
+
+    def _on_teacher_toggle_focus(self, _btn=None) -> None:
+        f_st = self.classroom_hub.get_focus_mode()
+        new_active = not f_st.get("enabled", False)
+        title = self.hub_bcast_title_entry.get_text().strip() or "Classroom Attention"
+        msg = self.hub_bcast_msg_entry.get_text().strip() or "Please pause your lab and look at the classroom board!"
+        self.classroom_hub.set_focus_mode(new_active, message=f"{title}: {msg}" if new_active else "")
+        if hasattr(self, "btn_focus_mode"):
+            self.btn_focus_mode.set_label("🔕 Unpause Class" if new_active else "🔔 Focus Mode")
+        status_txt = "ACTIVATED (Student screens paused)" if new_active else "DEACTIVATED (Student screens resumed)"
+        self._append_cortex_output("🔔 Classroom Focus Mode", f"Focus Mode {status_txt}.")
+        self._refresh_classroom_hub_ui()
+
+    def _on_teacher_teleport_student(self, _btn=None) -> None:
+        st = self.classroom_hub.get_state()
+        hands = st.get("hands_up_queue", [])
+        if not hands:
+            self._append_cortex_output("🎯 Teleport", "No active student hands in the queue.")
+            return
+        open_hands = [h for h in hands if h.get("status") == "open"]
+        target = open_hands[0] if open_hands else hands[0]
+        t_id = target.get("id")
+        student_data = self.classroom_hub.teleport_to_student(t_id)
+        if not student_data:
+            return
+
+        s_name = student_data.get("student_name", "Student")
+        t_lab = student_data.get("lab_id", "moon_lander")
+        if t_lab in self.labs:
+            self.lab_combo.set_active_id(t_lab)
+            self._on_lab_changed(self.lab_combo)
+
+        # Apply student's exact parameters
+        s_params = student_data.get("lab_params", {})
+        if s_params and hasattr(self.active_lab, "params"):
+            for k, v in s_params.items():
+                if k in self.active_lab.params:
+                    self.active_lab.update_param(k, float(v))
+            self._populate_sliders()
+
+        # Load student's code snippet
+        s_code = student_data.get("code_snippet", "")
+        if s_code and hasattr(self, "code_view"):
+            self.code_view.get_buffer().set_text(s_code)
+
+        self._append_cortex_output(
+            "🎯 Teleported to Student",
+            f"Successfully loaded {s_name}'s workspace (Lab: {t_lab})!\n"
+            f"Question: \"{student_data.get('question', '')}\""
+        )
 
 
 def main():
