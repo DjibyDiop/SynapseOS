@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-11-19T20:34:08Z",
+  "timestamp_utc": "2026-11-19T21:33:17Z",
   "hardware": {
     "hostname": "DESKTOP-JRPIL3H",
     "cpu": "Intel64 Family 6 Model 78 Stepping 3, GenuineIntel",
@@ -9,11 +9,11 @@
   },
   "1_memory_and_startup": {
     "cold_startup_ms": {
-      "1_c99_prime_kernel_init_ms": 507.6,
-      "2_cortex_fts5_kb_init_ms": 591.84,
-      "3_all_7_ai_labs_init_ms": 640.5,
-      "4_pack_manager_init_ms": 2.51,
-      "total_headless_cold_start_ms": 1742.45
+      "1_c99_prime_kernel_init_ms": 275.06,
+      "2_cortex_fts5_kb_init_ms": 545.02,
+      "3_all_7_ai_labs_init_ms": 585.39,
+      "4_pack_manager_init_ms": 19.22,
+      "total_headless_cold_start_ms": 1424.69
     },
     "runtime_memory_separation": {
       "headless_suite_rss_mb": 0.0,
@@ -32,16 +32,16 @@
     }
   },
   "2_hardware_optimizations": {
-    "c99_o3_simd_tokens_per_sec": 179,
-    "c99_o0_portable_scalar_tokens_per_sec": 62,
-    "pure_python_fallback_tokens_per_sec": 155,
-    "simd_vs_scalar_speedup": 2.89,
+    "c99_o3_simd_tokens_per_sec": 293,
+    "c99_o0_portable_scalar_tokens_per_sec": 102,
+    "pure_python_fallback_tokens_per_sec": 242,
+    "simd_vs_scalar_speedup": 2.87,
     "c99_vs_python_speedup": 1.2
   },
   "3_lesson_completion": {
     "total_lessons": 14,
     "sim_goals_passed": 14,
-    "sandbox_challenges_passed": 12,
+    "sandbox_challenges_passed": 14,
     "seed": 42,
     "lessons": [
       {
@@ -52,10 +52,10 @@
         "target": ">= 180.0",
         "untrained_baseline": -1000000000.0,
         "trained_result": 323.6,
-        "sim_time_ms": 6869.2,
+        "sim_time_ms": 4205.6,
         "sim_goal_passed": true,
-        "sandbox_code_ms": 4119.7,
-        "sandbox_code_passed": false
+        "sandbox_code_ms": 1580.3,
+        "sandbox_code_passed": true
       },
       {
         "lesson_id": "lesson_1_2",
@@ -65,9 +65,9 @@
         "target": ">= 13.0",
         "untrained_baseline": 12,
         "trained_result": 14,
-        "sim_time_ms": 10153.4,
+        "sim_time_ms": 2362.1,
         "sim_goal_passed": true,
-        "sandbox_code_ms": 576.5,
+        "sandbox_code_ms": 133.8,
         "sandbox_code_passed": true
       },
       {
@@ -78,9 +78,9 @@
         "target": ">= 200.0",
         "untrained_baseline": -1000000000.0,
         "trained_result": 440.7,
-        "sim_time_ms": 7783.9,
+        "sim_time_ms": 2334.7,
         "sim_goal_passed": true,
-        "sandbox_code_ms": 146.6,
+        "sandbox_code_ms": 50.5,
         "sandbox_code_passed": true
       },
       {
@@ -91,9 +91,9 @@
         "target": ">= 500.0",
         "untrained_baseline": -1000000000.0,
         "trained_result": 692.2,
-        "sim_time_ms": 40242.3,
+        "sim_time_ms": 6839.8,
         "sim_goal_passed": true,
-        "sandbox_code_ms": 3097.1,
+        "sandbox_code_ms": 773.2,
         "sandbox_code_passed": true
       },
       {
@@ -104,9 +104,9 @@
         "target": ">= 650.0",
         "untrained_baseline": -1000000000.0,
         "trained_result": 710.2,
-        "sim_time_ms": 27122.6,
+        "sim_time_ms": 9595.0,
         "sim_goal_passed": true,
-        "sandbox_code_ms": 227.3,
+        "sandbox_code_ms": 52.2,
         "sandbox_code_passed": true
       },
       {
@@ -117,9 +117,9 @@
         "target": ">= 15.0",
         "untrained_baseline": 0,
         "trained_result": 29,
-        "sim_time_ms": 48.0,
+        "sim_time_ms": 10.2,
         "sim_goal_passed": true,
-        "sandbox_code_ms": 682.4,
+        "sandbox_code_ms": 123.0,
         "sandbox_code_passed": true
       },
       {
@@ -130,9 +130,9 @@
         "target": ">= 50.0",
         "untrained_baseline": 0.0,
         "trained_result": 113.6,
-        "sim_time_ms": 74.5,
+        "sim_time_ms": 22.1,
         "sim_goal_passed": true,
-        "sandbox_code_ms": 764.7,
+        "sandbox_code_ms": 170.3,
         "sandbox_code_passed": true
       },
       {
@@ -143,9 +143,9 @@
         "target": ">= 500.0",
         "untrained_baseline": -1000000000.0,
         "trained_result": 697.0,
-        "sim_time_ms": 2109.5,
+        "sim_time_ms": 909.2,
         "sim_goal_passed": true,
-        "sandbox_code_ms": 1164.5,
+        "sandbox_code_ms": 777.3,
         "sandbox_code_passed": true
       },
       {
@@ -156,9 +156,9 @@
         "target": ">= 92.0",
         "untrained_baseline": 55.8,
         "trained_result": 98.3,
-        "sim_time_ms": 2847.2,
+        "sim_time_ms": 976.0,
         "sim_goal_passed": true,
-        "sandbox_code_ms": 966.7,
+        "sandbox_code_ms": 728.9,
         "sandbox_code_passed": true
       },
       {
@@ -169,9 +169,9 @@
         "target": ">= 82.0",
         "untrained_baseline": 44.2,
         "trained_result": 95.8,
-        "sim_time_ms": 2624.1,
+        "sim_time_ms": 1831.8,
         "sim_goal_passed": true,
-        "sandbox_code_ms": 74.9,
+        "sandbox_code_ms": 52.3,
         "sandbox_code_passed": true
       },
       {
@@ -182,10 +182,10 @@
         "target": ">= 200.0",
         "untrained_baseline": 0.0,
         "trained_result": 337.0,
-        "sim_time_ms": 9312.8,
+        "sim_time_ms": 5903.9,
         "sim_goal_passed": true,
-        "sandbox_code_ms": 4029.1,
-        "sandbox_code_passed": false
+        "sandbox_code_ms": 2557.7,
+        "sandbox_code_passed": true
       },
       {
         "lesson_id": "lesson_6_2",
@@ -195,9 +195,9 @@
         "target": ">= 1.0",
         "untrained_baseline": 1,
         "trained_result": 16,
-        "sim_time_ms": 4063.7,
+        "sim_time_ms": 1652.2,
         "sim_goal_passed": true,
-        "sandbox_code_ms": 1404.9,
+        "sandbox_code_ms": 713.8,
         "sandbox_code_passed": true
       },
       {
@@ -208,9 +208,9 @@
         "target": ">= 80.0",
         "untrained_baseline": 92.8,
         "trained_result": 91.5,
-        "sim_time_ms": 59.4,
+        "sim_time_ms": 42.9,
         "sim_goal_passed": true,
-        "sandbox_code_ms": 545.7,
+        "sandbox_code_ms": 273.8,
         "sandbox_code_passed": true
       },
       {
@@ -221,18 +221,18 @@
         "target": ">= 70.0",
         "untrained_baseline": 92.8,
         "trained_result": 87.4,
-        "sim_time_ms": 52.3,
+        "sim_time_ms": 28.2,
         "sim_goal_passed": true,
-        "sandbox_code_ms": 86.5,
+        "sandbox_code_ms": 49.8,
         "sandbox_code_passed": true
       }
     ]
   },
   "4_tutor_latency": {
     "prompts_tested": 10,
-    "tier1_offline_socratic_p50_ms": 1.788,
-    "tier1_offline_socratic_p95_ms": 5.542,
-    "tier1_offline_socratic_p99_ms": 5.542,
+    "tier1_offline_socratic_p50_ms": 0.508,
+    "tier1_offline_socratic_p95_ms": 1.462,
+    "tier1_offline_socratic_p99_ms": 1.462,
     "socratic_guiding_question_rate": "10/10 (100%)",
     "tier2_local_ollama": {
       "available": false
@@ -264,7 +264,7 @@
       "id": "FAIL-04",
       "scenario": "Student Submits Invalid Python Syntax (`SyntaxError`) in Sandbox",
       "expected_failure": "Subprocess catches SyntaxError, returns kid-friendly hint, flags Teacher Report",
-      "observed_metric": "ok=False, latency=117.3ms",
+      "observed_metric": "ok=False, latency=55.1ms",
       "handled_cleanly": true
     },
     {
@@ -278,7 +278,7 @@
       "id": "FAIL-06",
       "scenario": "Local Ollama Daemon Unreachable / Port Closed (`127.0.0.1:65534`)",
       "expected_failure": "Zero crash; automatic fallback to Tier-1 Offline Socratic Engine in <5ms",
-      "observed_metric": "source='Lumi Offline FTS5 Hint (3.23 ms)', fallback_latency=1016.65ms",
+      "observed_metric": "source='Lumi Offline FTS5 Hint (3.98 ms)', fallback_latency=1001.09ms",
       "handled_cleanly": true
     }
   ]
