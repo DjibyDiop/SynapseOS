@@ -96,6 +96,20 @@ class TestSynapseWorkbenchLabs(unittest.TestCase):
         code = generate_lab_python_code("prime_attention", lab.params, stats)
         self.assertIn("PrimeAttentionLab", code)
 
+    def test_lab8_atom_molecule_physics(self):
+        from workbench.labs.atom_physics import AtomPhysicsLab, TARGET_MOLECULES, ELEMENTS
+        lab = AtomPhysicsLab()
+        self.assertEqual(len(ELEMENTS), 7)
+        self.assertEqual(len(TARGET_MOLECULES), 5)
+        lab.update_param("temperature_k", 350.0)
+        lab.update_param("pop_atoms", 8.0)
+        stats = lab.fast_forward_generations(4)
+        self.assertIn("Atom & Molecule Physics", stats["lab"])
+        self.assertGreaterEqual(stats["molecules_formed"], 0)
+        self.assertIn("target_molecule", stats)
+        code = generate_lab_python_code("atom_physics", lab.params, stats)
+        self.assertIn("AtomPhysicsLab", code)
+
     def test_prime_c_engine_and_compressor(self):
         from cortex.prime_window import CortexSlidingWindowCompressor, benchmark_c_prime_engine, is_c_prime_available
         bench = benchmark_c_prime_engine(num_heads=8, head_dim=64, steps=200)

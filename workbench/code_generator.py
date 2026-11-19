@@ -181,6 +181,32 @@ if __name__ == "__main__":
     print(f"Constant O(1) State Memory: {{stats['state_kb']}} KB | C99 Throughput: {{stats['c_tokens_per_sec']}} tok/s")
 '''
 
+    if lab_id == "atom_physics":
+        return f'''#!/usr/bin/env python3
+"""
+Synapse Studio Auto-Generated Experiment: Atom & Molecule Physics
+Simulates Rutherford-Bohr electron orbits, Coulomb electrostatic attraction and molecular bonds.
+"""
+from workbench.labs.atom_physics import AtomPhysicsLab
+
+CONFIG = {{
+    "temperature_k": {params.get("temperature_k", 298.0)},
+    "coulomb_factor": {params.get("coulomb_factor", 1.0)},
+    "bond_threshold": {params.get("bond_threshold", 70.0)},
+    "electron_speed": {params.get("electron_speed", 1.2)},
+    "pop_atoms": {int(params.get("pop_atoms", 6))},
+    "target_molecule": {int(params.get("target_molecule", 0))},
+}}
+
+if __name__ == "__main__":
+    lab = AtomPhysicsLab()
+    for k, v in CONFIG.items():
+        lab.update_param(k, v)
+    stats = lab.fast_forward_generations(10)
+    print(f"Atom & Molecule Synthesis Complete! Synthesized: {{stats['molecules_formed']}} | Target: {{stats['target_molecule']}}")
+    print(f"Bond Energy: {{stats['bond_energy_ev']}} eV | Best Stability: {{stats['best_ever']}}%")
+'''
+
     # Swarm Ecosystem
     return f'''#!/usr/bin/env python3
 """

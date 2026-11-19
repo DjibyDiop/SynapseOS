@@ -31,6 +31,7 @@ from workbench.labs.cartpole_rl import CartPoleLab
 from workbench.labs.nn_playground import NeuralPlaygroundLab
 from workbench.labs.swarm_ecosystem import SwarmEcosystemLab
 from workbench.labs.prime_attention_lab import PrimeAttentionLab
+from workbench.labs.atom_physics import AtomPhysicsLab
 from workbench.code_generator import generate_lab_python_code
 from workbench.curriculum import (
     SCHOOL_CURRICULUM,
@@ -264,6 +265,7 @@ class SynapseStudioWindow(Gtk.Window):
         ("nn_playground", "⚙ 5. Neural Network Backprop (2D Decision Boundaries)"),
         ("swarm_ecosystem", "✦ 6. Predator-Prey Swarm (Co-Evolutionary Boids)"),
         ("prime_attention", "⚡ 7. PRIME Moment Sliding-Window Attention (O(1) Vault)"),
+        ("atom_physics", "⚛ 8. Atom & Molecule Physics (Quantum & Chemical Dynamics)"),
     ]
 
     def __init__(self):
@@ -287,6 +289,7 @@ class SynapseStudioWindow(Gtk.Window):
             "nn_playground": NeuralPlaygroundLab(),
             "swarm_ecosystem": SwarmEcosystemLab(),
             "prime_attention": PrimeAttentionLab(),
+            "atom_physics": AtomPhysicsLab(),
         }
         self.active_lab_id = "moon_lander"
         self.active_lesson_id = SCHOOL_CURRICULUM[0]["id"]
@@ -1764,6 +1767,7 @@ class SynapseStudioWindow(Gtk.Window):
             ("nn_playground", "Color Sorter (2D MLP)"),
             ("swarm_ecosystem", "Ocean Flock (Swarm)"),
             ("prime_attention", "PRIME Memory Vault"),
+            ("atom_physics", "Atom & Molecule (Physics)"),
         ]
         lab_lines = []
         for lid, lname in lab_names:
@@ -2283,6 +2287,8 @@ class SynapseStudioWindow(Gtk.Window):
             self._render_swarm(cr, w, h)
         elif lid == "prime_attention":
             self._render_prime_attention(cr, w, h)
+        elif lid == "atom_physics":
+            self._render_atom_physics(cr, w, h)
         return False
 
     def _render_moon_lander(self, cr: cairo.Context, w: float, h: float) -> None:
@@ -3191,6 +3197,153 @@ class SynapseStudioWindow(Gtk.Window):
         )
         cr.show_text(status_qk)
 
+    def _render_atom_physics(self, cr: cairo.Context, w: float, h: float) -> None:
+        """
+        Interactive 2D Quantum & Chemical Physics Simulator:
+        - Atomic nuclei with packed protons & neutrons
+        - Quantized electron shells (K, L, M) with revolving orbiting electrons
+        - Dynamic covalent & ionic bonds with glowing potential fields
+        - Chemical synthesis status banner & Periodic Table element tile
+        """
+        lab: AtomPhysicsLab = self.labs["atom_physics"]
+        pad = 8.0
+
+        # Background: Quantum vacuum chamber
+        cr.set_source_rgb(0.04, 0.05, 0.08)
+        cr.rectangle(0, 0, w, h)
+        cr.fill()
+
+        # Scale factor to fit 520x400 chamber into current canvas
+        cw, ch = 520.0, 400.0
+        scale_x = (w - 2 * pad) / cw
+        scale_y = (h - 60.0) / ch
+        scale = min(scale_x, scale_y)
+        offset_x = pad + (w - 2 * pad - cw * scale) * 0.5
+        offset_y = 36.0
+
+        # Draw container border
+        cr.set_source_rgb(0.12, 0.16, 0.24)
+        cr.set_line_width(2.0)
+        cr.rectangle(offset_x, offset_y, cw * scale, ch * scale)
+        cr.stroke()
+
+        # Faint coordinate grid lines
+        cr.set_source_rgba(0.2, 0.3, 0.5, 0.12)
+        cr.set_line_width(1.0)
+        for gx in range(int(offset_x), int(offset_x + cw * scale), 40):
+            cr.move_to(gx, offset_y)
+            cr.line_to(gx, offset_y + ch * scale)
+            cr.stroke()
+        for gy in range(int(offset_y), int(offset_y + ch * scale), 40):
+            cr.move_to(offset_x, gy)
+            cr.line_to(offset_x + cw * scale, gy)
+            cr.stroke()
+
+        # Header: Target Molecule info
+        rec = lab.target_recipe
+        cr.set_source_rgb(0.95, 0.98, 1.0)
+        cr.set_font_size(13.0)
+        cr.move_to(pad + 4, 20)
+        cr.show_text(f"⚛️ Lab 8: Atom & Molecule Physics — Target: {rec['name']} ({rec['bond_type']})")
+
+        t_k = lab.params.get("temperature_k", 298.0)
+        cr.set_font_size(10.5)
+        cr.set_source_rgb(0.35, 0.75, 1.0)
+        cr.move_to(max(pad + 4, w - 240), 20)
+        cr.show_text(f"Temp: {t_k:.0f} K | Energy: {lab.current_energy_ev:.1f} eV")
+
+        # Draw Chemical Bonds between atoms
+        for a in lab.atoms:
+            ax = offset_x + a.x * scale
+            ay = offset_y + a.y * scale
+            for b_idx in a.bonded_to:
+                if b_idx < len(lab.atoms):
+                    other = lab.atoms[b_idx]
+                    bx = offset_x + other.x * scale
+                    by = offset_y + other.y * scale
+
+                    # Glowing bond line
+                    cr.set_source_rgba(0.22, 0.85, 0.95, 0.75)
+                    cr.set_line_width(3.5 * scale)
+                    cr.move_to(ax, ay)
+                    cr.line_to(bx, by)
+                    cr.stroke()
+
+                    # Inner core bond beam
+                    cr.set_source_rgba(1.0, 1.0, 1.0, 0.9)
+                    cr.set_line_width(1.5 * scale)
+                    cr.move_to(ax, ay)
+                    cr.line_to(bx, by)
+                    cr.stroke()
+
+        # Draw Each Atom (Electron Shells, Orbiting Electrons, Nucleus, Symbol)
+        for a in lab.atoms:
+            ax = offset_x + a.x * scale
+            ay = offset_y + a.y * scale
+            rad = a.spec["radius"] * scale
+            r, g, b = a.spec["color"]
+
+            # Quantized Bohr Electron Shells (rings)
+            shells = a.spec["shells"]
+            e_idx = 0
+            for s_idx, e_count in enumerate(shells):
+                shell_radius = rad + (s_idx + 1) * (14.0 * scale)
+
+                # Shell ring (faint glowing orbit)
+                cr.set_source_rgba(0.3, 0.5, 0.8, 0.25)
+                cr.set_line_width(1.0)
+                cr.arc(ax, ay, shell_radius, 0, 2 * math.pi)
+                cr.stroke()
+
+                # Revolving electrons on this shell
+                for _ in range(e_count):
+                    if e_idx < len(a.electron_phases):
+                        phase = a.electron_phases[e_idx]
+                        ex = ax + math.cos(phase) * shell_radius
+                        ey = ay + math.sin(phase) * shell_radius
+
+                        # Electron glow
+                        cr.set_source_rgba(0.2, 0.9, 1.0, 0.4)
+                        cr.arc(ex, ey, 4.0 * scale, 0, 2 * math.pi)
+                        cr.fill()
+
+                        # Electron body
+                        cr.set_source_rgb(0.9, 0.98, 1.0)
+                        cr.arc(ex, ey, 2.2 * scale, 0, 2 * math.pi)
+                        cr.fill()
+                        e_idx += 1
+
+            # Atomic Nucleus (outer halo)
+            cr.set_source_rgba(r, g, b, 0.3)
+            cr.arc(ax, ay, rad + 3.0 * scale, 0, 2 * math.pi)
+            cr.fill()
+
+            # Nucleus core
+            cr.set_source_rgb(r, g, b)
+            cr.arc(ax, ay, rad, 0, 2 * math.pi)
+            cr.fill()
+
+            # Element Symbol text
+            cr.set_source_rgb(0.05, 0.05, 0.08) if (r + g + b > 2.0) else cr.set_source_rgb(0.95, 0.95, 1.0)
+            cr.set_font_size(max(9.0, 13.0 * scale))
+            sym = a.spec["symbol"]
+            cr.move_to(ax - 5.0 * scale, ay + 4.5 * scale)
+            cr.show_text(sym)
+
+        # Bottom Bar: Status & Telemetry HUD
+        by = offset_y + ch * scale + 6.0
+        cr.set_source_rgb(0.08, 0.10, 0.15)
+        cr.rectangle(offset_x, by, cw * scale, max(24.0, h - by - 4.0))
+        cr.fill()
+
+        cr.set_source_rgb(0.20, 0.92, 0.50)
+        cr.set_font_size(10.0)
+        cr.move_to(offset_x + 8, by + 15)
+        bonds_count = sum(len(a.bonded_to) for a in lab.atoms) // 2
+        cr.show_text(
+            f"✓ Synthesized Molecules: {lab.molecules_formed} | Active Chemical Bonds: {bonds_count} | Best Stability: {lab.best_synthesis_score:.1f}%"
+        )
+
     # ==========================================================================
     # CAIRO ANIMATED CORTEX-PHI3 BRAIN + ACTIVE LAB NEURAL TOPOLOGY RENDERER
     # ==========================================================================
@@ -3699,7 +3852,12 @@ class SynapseStudioWindow(Gtk.Window):
 
     def _open_learning_games(self) -> None:
         from workbench.learning_games import LearningGamesDialog
-        LearningGamesDialog(parent_window=self, lang="fr" if getattr(self, "lang", "en") == "fr" else "en").show()
+        LearningGamesDialog(
+            parent_window=self,
+            lang="fr" if getattr(self, "lang", "en") == "fr" else "en",
+            pack_mgr=getattr(self, "pack_mgr", None),
+            adaptive_tutor=getattr(self, "adaptive_tutor", None),
+        ).show()
 
     def _open_teacher_dashboard(self) -> None:
         from workbench.teacher_dashboard import TeacherDashboardDialog

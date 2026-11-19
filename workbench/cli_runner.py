@@ -20,6 +20,7 @@ from workbench.labs.cartpole_rl import CartPoleLab
 from workbench.labs.nn_playground import NeuralPlaygroundLab
 from workbench.labs.swarm_ecosystem import SwarmEcosystemLab
 from workbench.labs.prime_attention_lab import PrimeAttentionLab
+from workbench.labs.atom_physics import AtomPhysicsLab
 from workbench.code_generator import generate_lab_python_code
 from workbench.curriculum import (
     SCHOOL_CURRICULUM,
@@ -38,6 +39,7 @@ LAB_CLASSES = {
     "nn_playground": NeuralPlaygroundLab,
     "swarm_ecosystem": SwarmEcosystemLab,
     "prime_attention": PrimeAttentionLab,
+    "atom_physics": AtomPhysicsLab,
 }
 
 

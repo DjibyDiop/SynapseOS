@@ -663,6 +663,22 @@ class LearningPackManager:
             "last_freed_bytes": 0,
             "current_school_year": 1,
             "yearly_transcript": {},
+            "learning_games_stats": {
+                "total_score": 0,
+                "total_answered": 0,
+                "total_correct": 0,
+                "best_streak": 0,
+                "dungeon_gems": 0,
+                "dungeon_completed": False,
+                "subject_breakdown": {
+                    "math": {"answered": 0, "correct": 0, "score": 0},
+                    "language": {"answered": 0, "correct": 0, "score": 0},
+                    "geography": {"answered": 0, "correct": 0, "score": 0},
+                    "history": {"answered": 0, "correct": 0, "score": 0},
+                    "science": {"answered": 0, "correct": 0, "score": 0},
+                    "adventure": {"answered": 0, "correct": 0, "score": 0},
+                },
+            },
         }
         if os.path.exists(self.profile_path):
             try:
@@ -796,6 +812,65 @@ class LearningPackManager:
             self.profile["lab_runs_count"] = r_map
         if sec_add > 0 or run_add > 0:
             self.save_profile()
+
+    def record_learning_game_activity(
+        self,
+        subject: str,
+        is_correct: bool,
+        points: int = 100,
+        combo: int = 1,
+        dungeon_gems: int = 0,
+        dungeon_completed: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Record a student's answer or session in the multidisciplinary Learning Games Hub.
+        Persists into student_profile.json, updates lifetime points/coins, and awards badges.
+        """
+        stats = dict(self.profile.get("learning_games_stats", {}))
+        stats["total_answered"] = int(stats.get("total_answered", 0)) + 1
+        if is_correct:
+            stats["total_correct"] = int(stats.get("total_correct", 0)) + 1
+            stats["total_score"] = int(stats.get("total_score", 0)) + int(points)
+            self.profile["lifetime_points"] = int(self.profile.get("lifetime_points", 300)) + int(points)
+            self.profile["coins"] = int(self.profile.get("coins", 250)) + max(5, int(points // 10))
+
+        if combo > int(stats.get("best_streak", 0)):
+            stats["best_streak"] = int(combo)
+
+        if dungeon_gems > int(stats.get("dungeon_gems", 0)):
+            stats["dungeon_gems"] = int(dungeon_gems)
+        if dungeon_completed:
+            stats["dungeon_completed"] = True
+
+        breakdown = dict(stats.get("subject_breakdown", {}))
+        subj_entry = dict(breakdown.get(subject, {"answered": 0, "correct": 0, "score": 0}))
+        subj_entry["answered"] = int(subj_entry.get("answered", 0)) + 1
+        if is_correct:
+            subj_entry["correct"] = int(subj_entry.get("correct", 0)) + 1
+            subj_entry["score"] = int(subj_entry.get("score", 0)) + int(points)
+        breakdown[subject] = subj_entry
+        stats["subject_breakdown"] = breakdown
+
+        self.profile["learning_games_stats"] = stats
+
+        # Award gamified badges
+        if stats["total_answered"] >= 10:
+            self.award_badge("learning_games_novice", points=100, stars=2, coins=30)
+        if stats["total_correct"] >= 20:
+            self.award_badge("learning_games_scholar", points=250, stars=3, coins=75)
+        if combo >= 5:
+            self.award_badge("combo_master", points=150, stars=3, coins=50)
+        if dungeon_completed:
+            self.award_badge("odyssey_champion", points=300, stars=4, coins=100)
+
+        # Polymath badge: attempted all 5 core disciplines
+        core_subjects = {"math", "language", "geography", "history", "science"}
+        attempted = {s for s, data in breakdown.items() if data.get("answered", 0) > 0}
+        if core_subjects.issubset(attempted):
+            self.award_badge("polymath_badge", points=200, stars=3, coins=60)
+
+        self.save_profile()
+        return stats
 
     def record_sandbox_run(self, passed: bool, output_text: str = "", error_snippet: str = "") -> None:
         err_str = (output_text or error_snippet).lower()
@@ -1345,6 +1420,13 @@ class LearningPackManager:
         grad_years = [yid for yid, rec in sorted(transcript.items()) if rec.get("graduated")]
         grad_str = ", ".join(grad_years) if grad_years else f"{cur_yr_id} (In Progress)"
 
+        lg_stats = self.profile.get("learning_games_stats", {})
+        lg_ans = int(lg_stats.get("total_answered", 0))
+        lg_cor = int(lg_stats.get("total_correct", 0))
+        lg_pts = int(lg_stats.get("total_score", 0))
+        lg_acc = round((lg_cor / lg_ans * 100.0), 1) if lg_ans > 0 else 0.0
+        lg_gems = int(lg_stats.get("dungeon_gems", 0))
+
         html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1372,7 +1454,7 @@ class LearningPackManager:
     <div><b>Cumulative Average:</b> {avg_score}% (Honors Standing)</div>
     <div><b>Earned Trophies & Points:</b> {len(self.profile.get('earned_badges', []))} Gold Badges | {self.profile.get('lifetime_points', 300)} pts</div>
     <div><b>Graduated School Years:</b> {grad_str}</div>
-    <div><b>Curriculum Source:</b> github.com/batteryphil/SynapseOS/curricula/{cur_yr_id}.json</div>
+    <div><b>🎮 Learning Games Stats:</b> {lg_cor}/{lg_ans} answered ({lg_acc}% accuracy) | {lg_pts} pts | 💎 {lg_gems} gems</div>
   </div>
   <h3>Active School Year ({grade_lbl}) — 5 Core Subjects & Connected AI Labs</h3>
   <table>
@@ -1397,6 +1479,7 @@ class LearningPackManager:
             f"Cumulative Average : {avg_score}% (Honors Standing)\n"
             f"Gold Trophies      : {len(self.profile.get('earned_badges', []))} Badges | {self.profile.get('lifetime_points', 300)} pts | {self.profile.get('coins', 250)} Coins\n"
             f"Graduated Years    : {grad_str}\n"
+            f"Learning Games     : {lg_cor}/{lg_ans} questions ({lg_acc}%) | {lg_pts} pts | 💎 {lg_gems} gems\n"
             f"----------------------------------------------------------------------\n"
             f"ACTIVE GRADE ({grade_lbl.upper()}) SUBJECT SCORES:\n"
             + "\n".join(rows_txt)

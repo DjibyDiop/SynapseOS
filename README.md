@@ -1,15 +1,17 @@
-# SynapseOS: Potato-Grade Linux Distro & 7-Lab Native AI Workbench
+# SynapseOS: Potato-Grade Linux Distro & 8-Lab Native AI & Physics Workbench
 
 - **Base OS**: Debian 12 Bookworm (`minbase`, `x86_64`) + Xorg + Openbox + Tint2 + `tty1` autologin (`242 MB` live idle RAM).
 - **Synapse Studio & Synapse Kids Arcade**: Native GTK3 + Cairo 60 FPS AI Workbench (`62.9 MB` full runtime RSS, `3.27 ms/frame` at `1280x720`, `0 KB` texture bloat, `0.09s` cold start) featuring:
   - **Full-Screen `Synapse Kids` Mode** ([`workbench/kid_arcade_view.py`](file:///home/phil/.gemini/antigravity/scratch/synapse-os/workbench/kid_arcade_view.py)): Gamified Scratch-style classroom UI with default English language (`EN`), 1-click **`L1`–`L7` Level Selector Pills**, interactive canvas clicks across all 7 levels, **`🤝 Co-Op Pods`** (offline LAN multiplayer pairing where two students collaborate as Pilot and Engineer on the same simulation), **Lumi Adaptive Micro-Pathing** (proactive zero-latency pedagogical tutor that detects repeated failures and unlocks Secret Master Challenges upon mastery streaks), **`✋ Raise Hand`** instant LAN alert, **`📺 Kids TV`** 1-click safe STEM media player, real-time **Teacher LAN Mission Broadcast Pills**, and **Classroom Focus Mode ("Eyes on Teacher")** soft pause.
   - **`⚙ Teacher / Pro Workstation Mode`** ([`workbench/studio_gui.py`](file:///home/phil/.gemini/antigravity/scratch/synapse-os/workbench/studio_gui.py)): Full 3-column engineering interface with **Dedicated Teacher Dashboard** ([`workbench/teacher_dashboard.py`](file:///home/phil/.gemini/antigravity/scratch/synapse-os/workbench/teacher_dashboard.py)) featuring 6 tabs (Live Student Roster with 5s auto-refresh, Class Schedule Planner, Gradebook & HTML report card export, 1-click Quick Broadcast, Real-Time Hands-Up Q&A queue with `🎯 Teleport to Student`, and **Timed Exam Sessions with Auto-Collection & Printable Worksheets**), **Class Session Intelligence Report** (1-click automated invisible assessment summarizing classroom mastery rate and pedagogical recommendations), **Classroom Air-Drop Course Bundle Sync** (instant offline USB/LAN course distribution), **UDP Auto-Discovery** (automatic LAN detection of student PCs on port 50505), **Full-Screen Classroom Kiosk Mode** (lockdown mode blocking Alt+F4, Alt+Tab, and Escape), **Direct Boot without menu prompts**, and **Encrypted Remote Browser Tunnel (`synapse-tunnel`)**.
-  - **Learning Games Hub (Multidisciplinary Educational Games)** ([`workbench/learning_games.py`](file:///home/phil/.gemini/antigravity/scratch/synapse-os/workbench/learning_games.py)): Dedicated 100% offline educational game suite covering core school subjects with bilingual support (EN/FR), Socratic feedback, combo streaks, and gems:
-    1. **📐 Math Quest**: Mental math, geometry angle sums, fractions & algebraic equations.
-    2. **🔤 Word Voyage**: Vocabulary synonyms, nouns/grammar, Latin/Greek roots & spelling.
-    3. **🌍 Geo Explorer**: Continents, oceanic trenches, world capitals & compass directions.
-    4. **⏳ Time Traveler**: Ancient civilisations, Gutenberg printing, Newton gravitation & Apollo Moon landings.
-    5. **🗺️ Adventure Odyssey**: Multi-subject dungeon RPG quest unlocking chambers through academic knowledge.
+  - **Learning Games Hub (Multidisciplinary Educational Games)** ([`workbench/learning_games.py`](file:///home/phil/.gemini/antigravity/scratch/synapse-os/workbench/learning_games.py)): Dedicated 100% offline educational game suite covering core school subjects with bilingual support (EN/FR), Socratic feedback, combo streaks, and gems (105 questions across 5 core subject banks):
+    1. **📐 Math Quest**: Mental math, geometry angle sums, fractions & algebraic equations (21 questions).
+    2. **🔤 Word Voyage**: Vocabulary synonyms, nouns/grammar, Latin/Greek roots & spelling (21 questions).
+    3. **🌍 Geo Explorer**: Continents, oceanic trenches, world capitals & compass directions (21 questions).
+    4. **⏳ Time Traveler**: Ancient civilisations, Gutenberg printing, Newton gravitation & Apollo Moon landings (21 questions).
+    5. **🔬 Science Explorer**: Atomic structure, cell biology, periodic elements, astrophysics & thermodynamics (21 questions).
+    6. **🗺️ Adventure Odyssey**: Multi-subject dungeon RPG quest unlocking chambers across all 5 fields.
+    - **📊 Student Progress Tracking & K-12 Report Card**: Scores, combos, and gems are recorded into `student_profile.json`, award gamified badges (Novice, Scholar, Combo Master, Odyssey Champion, Polymath), and appear on the official printable K-12 Report Card and Lumi adaptive pathing.
   - **Safe Media & Kiwix Content Sandbox** ([`workbench/safe_media_sandbox.py`](file:///home/phil/.gemini/antigravity/scratch/synapse-os/workbench/safe_media_sandbox.py)): 100% offline educational video player with animated STEM lessons, interactive quick-check comprehension quizzes, local Kiwix `.zim` archive auto-discovery (Linux & Windows search paths with `kiwix-serve` support and offline fallback), and speech synthesis (`espeak-ng`).
 - **Four-Tier Local AI Engine**:
   1. **Tier 1 (`0.51 ms` P50, `92 KB`, pre-warmed for `<1ms` guaranteed response)**: SQLite FTS5 BM25 hot-cached offline knowledge base (`cortex_kb.sqlite`) with instant heuristic retrieval.
@@ -100,7 +102,7 @@ If you want a fast `437 MB` download without the `2.2 GB` LLM weights (still inc
 
 ---
 
-## 2. 7 Native GTK3 + Cairo AI Labs (`workbench/`) — 35 Presets (`5 per Lab`)
+## 2. 8 Native GTK3 + Cairo AI & Physics Labs (`workbench/`) — 40 Presets (`5 per Lab`)
 
 | Lab | Paradigm | Interactive Parameters & Brain Surgery | Headless CPU Speed (`12 gens`) |
 | :--- | :--- | :--- | :--- |
@@ -111,6 +113,7 @@ If you want a fast `437 MB` download without the `2.2 GB` LLM weights (still inc
 | **5. Neural Network Backprop** | Deep Learning (`MLP`) | Dataset (`XOR`, `Circles`, `Moons`, `Spiral`), Hidden Neurons, LR ($\eta$), L2 ($\lambda$), Noise, Batch Steps | `64.5 ms` |
 | **6. Predator-Prey Swarm** | Co-Evolutionary Boids | Prey Flock Size, Predator Count, Vision Radius, Max Speeds, Cohesion Drive, Food Density | `42.8 ms` |
 | **7. PRIME Moment Attention** | Hybrid Sliding Window + $\mathcal{O}(1)$ C99 Memory | Context Tokens ($N$), Local Window ($W$), PRIME Moments ($K$), EMA Decay ($\gamma$), Recall Temp, Threads | `14.2 ms` (`8,737 tok/s` C99) |
+| **8. Atom & Molecule Physics** | Quantum & Chemical Dynamics | Temperature (K), Coulomb Force Multiplier, Bond Distance, Electron Speed, Chamber Population, Target Recipe ($H_2O, CO_2, CH_4, NaCl, O_2$) | `3.9 ms` |
 
 ---
 

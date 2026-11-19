@@ -341,8 +341,28 @@ class TestFastSubMillisecondAndClassroomHub(unittest.TestCase):
         self.assertEqual(master_res["type"], "master_challenge_unlocked")
 
     def test_learning_games_all_5_subjects_and_adventure_odyssey(self):
-        from workbench.learning_games import LearningGamesEngine, LearningGamesDialog
-        engine = LearningGamesEngine(lang="en")
+        from workbench.learning_games import (
+            LearningGamesEngine,
+            LearningGamesDialog,
+            MATH_QUESTIONS,
+            LANGUAGE_QUESTIONS,
+            GEOGRAPHY_QUESTIONS,
+            HISTORY_QUESTIONS,
+            SCIENCE_QUESTIONS,
+        )
+        from workbench.pack_manager import LearningPackManager
+        from workbench.classroom_hub import LumiAdaptiveMicroPathing
+
+        # Verify 20+ questions per subject bank
+        self.assertGreaterEqual(len(MATH_QUESTIONS), 20)
+        self.assertGreaterEqual(len(LANGUAGE_QUESTIONS), 20)
+        self.assertGreaterEqual(len(GEOGRAPHY_QUESTIONS), 20)
+        self.assertGreaterEqual(len(HISTORY_QUESTIONS), 20)
+        self.assertGreaterEqual(len(SCIENCE_QUESTIONS), 20)
+
+        pack_mgr = LearningPackManager()
+        tutor = LumiAdaptiveMicroPathing(student_name="TestCadet")
+        engine = LearningGamesEngine(lang="en", pack_mgr=pack_mgr, adaptive_tutor=tutor)
 
         # 1. Math Quest
         self.assertTrue(engine.select_game("math"))
@@ -371,7 +391,15 @@ class TestFastSubMillisecondAndClassroomHub(unittest.TestCase):
         q_hist = engine.get_current_question()
         self.assertIn("options", q_hist)
 
-        # 5. Adventure Odyssey Dungeon Quest
+        # 5. Science Explorer (New 6th Educational Game)
+        self.assertTrue(engine.select_game("science"))
+        q_sci = engine.get_current_question()
+        self.assertIn("Physics", q_sci.get("category", "") + q_sci.get("question_en", ""))
+        res_sci = engine.submit_answer(q_sci["correct_idx"])
+        self.assertTrue(res_sci["is_correct"])
+        self.assertEqual(engine.combo_streak, 1)
+
+        # 6. Adventure Odyssey Dungeon Quest (across all 5 fields)
         self.assertTrue(engine.select_game("adventure"))
         q_adv = engine.get_current_question()
         self.assertEqual(q_adv["room_num"], 1)
@@ -387,6 +415,18 @@ class TestFastSubMillisecondAndClassroomHub(unittest.TestCase):
         self.assertEqual(metrics["dungeon_gems"], 5)
         self.assertTrue(metrics["dungeon_completed"])
         self.assertGreater(metrics["score"], 400)
+        self.assertIn("subject_stats", metrics)
+
+        # Verify Student Profile Persistence & Report Card Export
+        profile_stats = pack_mgr.profile.get("learning_games_stats", {})
+        self.assertGreater(profile_stats.get("total_answered", 0), 5)
+        self.assertGreater(profile_stats.get("total_correct", 0), 4)
+
+        report = pack_mgr.export_printable_report_card()
+        self.assertTrue(os.path.exists(report["html_path"]))
+        with open(report["html_path"], "r", encoding="utf-8") as f:
+            html_text = f.read()
+        self.assertIn("Learning Games Stats", html_text)
 
         # 6. Test Dialog headless instantiation
         dlg = LearningGamesDialog(parent_window=None, lang="en")
