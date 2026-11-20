@@ -158,6 +158,24 @@ LEVEL_DATA: List[Dict[str, Any]] = [
         "btn3_en": ("Sharp", "Focus"),
         "btn3_fr": ("Super", "Focus"),
     },
+    {
+        "level": 8,
+        "lab_id": "atom_physics",
+        "title_en": "Level 8: Quantum Molecule Builder",
+        "title_fr": "Niveau 8 : Fabrique de molécules",
+        "speech_en": "Build water, salt, and oxygen! Watch orbiting electrons and electrostatic bonds click atoms together!",
+        "speech_fr": "Construis de l'eau, du sel et de l'oxygène ! Regarde les électrons tourner et les atomes se lier !",
+        "obj1_en": "Bond atoms together",
+        "obj1_fr": "Créer des liaisons",
+        "obj2_en": "Form H₂O molecule",
+        "obj2_fr": "Fabriquer de l'eau",
+        "btn1_en": ("Cook", "Faster"),
+        "btn1_fr": ("Chauffer", "Agitation"),
+        "btn2_en": ("Strong", "Magnets"),
+        "btn2_fr": ("Aimants", "Coulomb"),
+        "btn3_en": ("Switch", "Recipe"),
+        "btn3_fr": ("Changer", "Molécule"),
+    },
 ]
 
 
@@ -1138,6 +1156,8 @@ class SynapseKidsView(Gtk.DrawingArea):
                     self.studio._render_swarm(cr, sw, sub_h)
                 elif lid == "prime_attention":
                     self.studio._render_prime_attention(cr, sw, sub_h)
+                elif lid == "atom_physics":
+                    self.studio._render_atom_physics(cr, sw, sub_h)
                 cr.restore()
 
             # Top-Left "SIMULATION" title + 7 One-Click Level Buttons + Click Hint
@@ -2880,6 +2900,18 @@ class SynapseKidsView(Gtk.DrawingArea):
                     if is_fr
                     else f"Testing passkey recall across {int(next_g)} words! Notice how the Golden PRIME Vault still remembers!"
                 )
+            elif lid == "atom_physics":
+                from workbench.labs.atom_physics import TARGET_MOLECULES
+                cur_r = int(round(lab.params.get("target_molecule", 0.0)))
+                next_r = (cur_r + 1) % len(TARGET_MOLECULES)
+                lab.update_param("target_molecule", float(next_r))
+                lab.fast_forward_generations(4)
+                self.studio._populate_sliders()
+                self.custom_speech = (
+                    f"Recette changée vers {lab.target_recipe['name']} ({lab.target_recipe['bond_type']}) ! Les atomes s'attirent !"
+                    if is_fr
+                    else f"Changed target to {lab.target_recipe['name']} ({lab.target_recipe['bond_type']})! Atoms are bonding!"
+                )
             self.queue_draw()
             return True
 
@@ -2930,6 +2962,14 @@ class SynapseKidsView(Gtk.DrawingArea):
                     f"Coffre PRIME amélioré avec {new_h} têtes d'attention ! La mémoire longue distance grimpe !"
                     if is_fr
                     else f"Upgraded PRIME Vault to {new_h} Attention Heads! Watch the green recall bar climb higher!"
+                )
+            elif lid == "atom_physics":
+                lab.update_param("temperature_k", 350.0)
+                lab.fast_forward_generations(6)
+                self.custom_speech = (
+                    f"Agitation thermique activée (350 K) ! La synthèse de {lab.target_recipe['name']} accélère !"
+                    if is_fr
+                    else f"Thermal agitation boosted to 350 K! {lab.target_recipe['name']} molecules are bonding rapidly!"
                 )
             else:
                 lab.fast_forward_generations(15)
@@ -3029,12 +3069,22 @@ class SynapseKidsView(Gtk.DrawingArea):
                     if is_fr
                     else f"Sliding Window changed to W={int(new_w)} words! Watch the Blue and Green recall curves shift!"
                 )
+            elif lid == "atom_physics":
+                cur_c = lab.params.get("coulomb_factor", 1.0)
+                new_c = 1.0 if cur_c > 1.8 else round(cur_c + 0.4, 1)
+                lab.update_param("coulomb_factor", new_c)
+                lab.fast_forward_generations(4)
+                self.custom_speech = (
+                    f"Attraction électrostatique Coulomb réglée à {new_c}x ! Les liaisons se verrouillent !"
+                    if is_fr
+                    else f"Coulomb electrostatic force boosted to {new_c}x! Chemical bonds locking in!"
+                )
             self.studio._populate_sliders()
             self.queue_draw()
             return True
 
         if clicked_id == "btn_gravity":
-            self.light_grav = not self.light_grav if lid in ("nn_playground", "raycast_car", "prime_attention") else True
+            self.light_grav = not self.light_grav if lid in ("nn_playground", "raycast_car", "prime_attention", "atom_physics") else True
             self.stars_score = 3
             self.obj1_done = True
             self.obj2_done = True
@@ -3119,6 +3169,17 @@ class SynapseKidsView(Gtk.DrawingArea):
                         if is_fr
                         else "QK-Norm turned OFF! Notice how the green recall bar drops from Taylor polynomial rebound!"
                     )
+            elif lid == "atom_physics":
+                from workbench.labs.atom_physics import TARGET_MOLECULES
+                cur_r = int(round(lab.params.get("target_molecule", 0.0)))
+                next_r = (cur_r + 1) % len(TARGET_MOLECULES)
+                lab.update_param("target_molecule", float(next_r))
+                lab.fast_forward_generations(3)
+                self.custom_speech = (
+                    f"Molécule cible : {lab.target_recipe['name']} ({lab.target_recipe['bond_type']}) ! Les atomes cherchent la bonne géométrie !"
+                    if is_fr
+                    else f"Target Molecule: {lab.target_recipe['name']} ({lab.target_recipe['bond_type']})! Atoms aligning geometric bonds!"
+                )
             self.studio._populate_sliders()
             self.queue_draw()
             return True
