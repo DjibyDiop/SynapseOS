@@ -432,6 +432,33 @@ class TestFastSubMillisecondAndClassroomHub(unittest.TestCase):
         dlg = LearningGamesDialog(parent_window=None, lang="en")
         self.assertIsNotNone(dlg.engine)
 
+    def test_multidisciplinary_worksheet_and_kb_entries(self):
+        from workbench.classroom_hub import ClassroomHubManager
+        from cortex.engine import CortexEngine
+
+        hub = ClassroomHubManager(enable_udp=False)
+        for subj in ("math", "science", "atom_physics"):
+            qs = hub.generate_subject_worksheet_questions(subject=subj, count=4, lang="fr")
+            self.assertEqual(len(qs), 4)
+            html = hub.export_printable_worksheet(title=f"Eval {subj}", lab_id=subj, questions=qs)
+            self.assertIn("SynapseOS", html)
+
+        # Verify Level 8 in Kid Arcade (works even headless without gi)
+        kav_path = os.path.join(os.path.dirname(__file__), "..", "workbench", "kid_arcade_view.py")
+        with open(kav_path, "r", encoding="utf-8") as f:
+            kav_src = f.read()
+        self.assertIn('"lab_id": "atom_physics"', kav_src)
+        self.assertIn("Level 8: Quantum Molecule Builder", kav_src)
+
+        # Verify FTS5 KB entries for Lab 8 and Learning Games
+        ce = CortexEngine()
+        r_atom = ce.kb.search_ai("atom physics", limit=1)
+        self.assertTrue(len(r_atom) >= 1)
+        self.assertIn("Atom", r_atom[0]["title"])
+        r_games = ce.kb.search_ai("learning games", limit=1)
+        self.assertTrue(len(r_games) >= 1)
+        self.assertIn("Learning Games", r_games[0]["title"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -836,6 +836,50 @@ class ClassroomHubManager:
 </html>"""
         return html
 
+    def generate_subject_worksheet_questions(
+        self,
+        subject: str = "science",
+        count: int = 5,
+        lang: str = "fr",
+    ) -> List[str]:
+        """Génère des questions d'évaluation prêtes à imprimer depuis la banque de 105 questions ou Lab 8."""
+        if subject == "atom_physics":
+            return [
+                "Combien de protons et d'électrons possède un atome neutre de Carbone (Z=6) dans les couches K et L ?",
+                "Expliquez la différence entre une liaison covalente (ex: H2O) et une liaison ionique (ex: NaCl).",
+                "Que se passe-t-il au niveau des collisions moléculaires lorsque l'on augmente la température (K) ?",
+                "Dessinez le modèle de Rutherford-Bohr pour l'atome d'Oxygène (Z=8).",
+            ][:count]
+
+        try:
+            from workbench.learning_games import (
+                MATH_QUESTIONS,
+                LANGUAGE_QUESTIONS,
+                GEOGRAPHY_QUESTIONS,
+                HISTORY_QUESTIONS,
+                SCIENCE_QUESTIONS,
+            )
+            banks = {
+                "math": MATH_QUESTIONS,
+                "language": LANGUAGE_QUESTIONS,
+                "geography": GEOGRAPHY_QUESTIONS,
+                "history": HISTORY_QUESTIONS,
+                "science": SCIENCE_QUESTIONS,
+            }
+            bank = banks.get(subject, SCIENCE_QUESTIONS)
+            q_key = "question_fr" if lang == "fr" else "question_en"
+            selected = bank[:max(1, min(count, len(bank)))]
+            out: List[str] = []
+            for q in selected:
+                opts = " / ".join(q.get("options", []))
+                out.append(f"{q.get(q_key, '')} <i>(Choix : {opts})</i>")
+            return out
+        except Exception:
+            return [
+                "Expliquez le rôle de la gravité lunaire (-1.62 m/s²) par rapport à la poussée du réacteur.",
+                "Quel curseur de mutation génétique permet d'éviter que le véhicule ne tourne en rond ?",
+            ][:count]
+
     # ------------------------------------------------------------------
     # Co-Op Mesh Pods (LAN Multiplayer Collaboration between Students)
     # ------------------------------------------------------------------

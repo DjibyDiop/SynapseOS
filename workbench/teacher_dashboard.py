@@ -790,8 +790,22 @@ class TeacherDashboardDialog:
         lbl_p_title = Gtk.Label(label="Titre fiche :")
         p_row1.pack_start(lbl_p_title, False, False, 0)
         self._sheet_title_entry = Gtk.Entry()
-        self._sheet_title_entry.set_text("TP Physique & Apprentissage par Renforcement")
+        self._sheet_title_entry.set_text("TP Physique, Chimie & Apprentissage IA")
         p_row1.pack_start(self._sheet_title_entry, True, True, 0)
+
+        self._sheet_subj_combo = Gtk.ComboBoxText()
+        for sid, slbl in [
+            ("ai_labs", "🤖 AI Labs (Fusée & Neurones)"),
+            ("atom_physics", "⚛️ Lab 8: Atomes & Molécules"),
+            ("math", "📐 Math Quest"),
+            ("language", "🔤 Word Voyage"),
+            ("geography", "🌍 Geo Explorer"),
+            ("history", "⏳ Time Traveler"),
+            ("science", "🔬 Science Explorer"),
+        ]:
+            self._sheet_subj_combo.append(sid, slbl)
+        self._sheet_subj_combo.set_active(0)
+        p_row1.pack_start(self._sheet_subj_combo, False, False, 0)
 
         btn_gen_sheet = Gtk.Button(label="📄 Exporter Fiche Prête à Imprimer")
         btn_gen_sheet.set_tooltip_text("Génère un document HTML propre, aéré et directement imprimable")
@@ -841,16 +855,28 @@ class TeacherDashboardDialog:
 
     def _on_export_worksheet(self):
         title = self._sheet_title_entry.get_text().strip() or "Fiche d'Exercice"
-        questions = [
-            "Expliquez le rôle de la gravité lunaire (-1.62 m/s²) par rapport à la poussée du réacteur.",
-            "Quel curseur de mutation génétique permet d'éviter que le véhicule ne tourne en rond ?",
-            "Décrivez en 2 phrases comment le réseau de neurones ajuste ses poids après chaque tentative.",
-            "Proposez une fonction de récompense mathématique favorisant une consommation minimale de carburant.",
-        ]
+        subj = self._sheet_subj_combo.get_active_id() if hasattr(self, "_sheet_subj_combo") else "ai_labs"
+        if subj == "ai_labs" or not subj:
+            questions = [
+                "Expliquez le rôle de la gravité lunaire (-1.62 m/s²) par rapport à la poussée du réacteur.",
+                "Quel curseur de mutation génétique permet d'éviter que le véhicule ne tourne en rond ?",
+                "Décrivez en 2 phrases comment le réseau de neurones ajuste ses poids après chaque tentative.",
+                "Proposez une fonction de récompense mathématique favorisant une consommation minimale de carburant.",
+            ]
+            lab_lbl = "Physique & IA"
+        else:
+            questions = _safe_call(
+                self.hub.generate_subject_worksheet_questions,
+                subject=subj,
+                count=5,
+                lang="fr",
+                default=[],
+            )
+            lab_lbl = subj
         html_content = _safe_call(
             self.hub.export_printable_worksheet,
             title=title,
-            lab_id="Physique & IA",
+            lab_id=lab_lbl,
             questions=questions,
             instructions="Répondez aux questions ci-dessous avec soin après avoir testé vos hypothèses dans le simulateur.",
             default="",
