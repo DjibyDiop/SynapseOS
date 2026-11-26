@@ -1224,6 +1224,7 @@ class LearningGamesEngine:
         "history": {"title_en": "⏳ Time Traveler", "title_fr": "⏳ Voyageur du Temps", "bank": HISTORY_QUESTIONS},
         "science": {"title_en": "🔬 Science Explorer", "title_fr": "🔬 Explorateur Scientifique", "bank": SCIENCE_QUESTIONS},
         "adventure": {"title_en": "🗺️ Adventure Odyssey", "title_fr": "🗺️ L'Odyssée Apprenante", "bank": []},
+        "revision": {"title_en": "🧠 Smart Revision", "title_fr": "🧠 Révision Lumi", "bank": []},
     }
 
     def __init__(
@@ -1243,6 +1244,12 @@ class LearningGamesEngine:
         self.total_answered: int = 0
         self.total_correct: int = 0
         self.last_result: Optional[Dict[str, Any]] = None
+        self.sound_enabled: bool = True
+
+        # Missed questions queue for Lumi Smart Revision
+        self.missed_question_ids: List[str] = []
+        if self.pack_mgr is not None and hasattr(self.pack_mgr, "profile"):
+            self.missed_question_ids = list(self.pack_mgr.profile.get("missed_question_ids", []))
 
         # Subject-specific metrics
         self.subject_stats: Dict[str, Dict[str, int]] = {
@@ -1272,8 +1279,31 @@ class LearningGamesEngine:
             return True
         return False
 
+    def get_revision_bank(self) -> List[Dict[str, Any]]:
+        """Builds a personalized Lumi Smart Revision deck from missed questions or advanced challenges."""
+        all_qs = (
+            MATH_QUESTIONS
+            + LANGUAGE_QUESTIONS
+            + GEOGRAPHY_QUESTIONS
+            + HISTORY_QUESTIONS
+            + SCIENCE_QUESTIONS
+        )
+        if self.missed_question_ids:
+            missed_set = set(self.missed_question_ids)
+            missed_qs = [q for q in all_qs if q.get("id") in missed_set]
+            if missed_qs:
+                return missed_qs
+        # Fallback: Middle & High School mastery review across all 5 subjects
+        adv = [q for q in all_qs if q.get("grade_level") in ("Middle School", "High School")]
+        return adv if adv else all_qs
+
     def get_current_question(self) -> Dict[str, Any]:
         """Returns the current active question for the selected game."""
+        if self.active_game_id == "revision":
+            bank = self.get_revision_bank()
+            q = bank[self.current_q_idx % len(bank)]
+            return {**q, "is_revision": True, "missed_count": len(self.missed_question_ids)}
+
         if self.active_game_id == "adventure":
             # Round-robin through Math -> Lang -> Geo -> History -> Science
             subject_banks = [
@@ -1322,8 +1352,30 @@ class LearningGamesEngine:
                     self.dungeon_room += 1
                 else:
                     self.dungeon_completed = True
+            elif self.active_game_id == "revision":
+                qid = q.get("id")
+                if qid and qid in self.missed_question_ids:
+                    self.missed_question_ids.remove(qid)
+                    points_earned += 50  # Mastery bonus
+                    self.score += 50
         else:
             self.combo_streak = 0
+            qid = q.get("id")
+            if qid and qid not in self.missed_question_ids:
+                self.missed_question_ids.append(qid)
+
+        if self.pack_mgr is not None and hasattr(self.pack_mgr, "profile"):
+            self.pack_mgr.profile["missed_question_ids"] = list(self.missed_question_ids)
+
+        # Offline audio chime feedback
+        try:
+            from workbench.audio_feedback import play_chime
+            if is_correct:
+                play_chime("combo" if self.combo_streak >= 3 else "correct", enabled=self.sound_enabled)
+            else:
+                play_chime("wrong", enabled=self.sound_enabled)
+        except Exception:
+            pass
 
         # Update per-subject stats
         cur_subj = self.active_game_id
@@ -1509,9 +1561,13 @@ class LearningGamesDialog:
         self.feedback_lbl.set_line_wrap(True)
         card_box.pack_start(self.feedback_lbl, False, False, 4)
 
-        # Next Button Row
+        # Next Button Row + Offline Read-Aloud TTS Button
         bottom_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         card_box.pack_start(bottom_row, False, False, 0)
+
+        self.btn_speak = Gtk.Button(label="🔊 Lire / Read Aloud")
+        self.btn_speak.connect("clicked", lambda _b: self._on_speak_clicked())
+        bottom_row.pack_start(self.btn_speak, False, False, 0)
 
         self.btn_next = Gtk.Button(label="Suivant / Next ➔")
         self.btn_next.set_sensitive(False)
@@ -1536,6 +1592,9 @@ class LearningGamesDialog:
         room_info = ""
         if "room_num" in q:
             room_info = f" · Salle {q['room_num']}/{q['max_rooms']} 💎 {q['gems']} gemmes"
+        elif q.get("is_revision"):
+            mc = q.get("missed_count", 0)
+            room_info = f" · 🧠 Révision Lumi ({mc} à consolider)" if mc > 0 else " · 🧠 Défi Maîtrise"
 
         self.card_frame.set_label(f" {self.engine.GAMES[self.engine.active_game_id]['title_en']} ")
         self.q_cat_lbl.set_markup(f"<b><span foreground='#38bdf8'>★ {cat}</span></b> ({level}){room_info}")
@@ -1572,6 +1631,12 @@ class LearningGamesDialog:
             f"<b>Score : {self.engine.score} pts</b> | Combo : {self.engine.combo_streak} 🔥"
         )
         self.btn_next.set_sensitive(True)
+
+    def _on_speak_clicked(self):
+        from workbench.audio_feedback import speak_text
+        q = self.engine.get_current_question()
+        q_text = q.get("question_fr" if self.lang == "fr" else "question_en", "")
+        speak_text(q_text, lang=self.lang, enabled=True)
 
     def _on_next_clicked(self):
         self.engine.next_question()
